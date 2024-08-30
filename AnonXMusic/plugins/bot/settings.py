@@ -384,6 +384,22 @@ async def digerbotlar_callback(client, CallbackQuery: CallbackQuery, _):
         reply_markup=keyboard
     )
 
+# Manejador para el botón "BACK_BUTTON"
+@app.on_callback_query(filters.regex("show_private_panel") & ~BANNED_USERS)
+@languageCB
+async def show_private_panel_callback(client, CallbackQuery: CallbackQuery, _):
+    # Obtiene los botones de private_panel
+    buttons = private_panel(_)
+
+    # Mensaje personalizado
+    message_text = _["start_2"].format(CallbackQuery.from_user.mention, app.mention)
+
+    # Edita el mensaje para mostrar el mensaje personalizado y los botones
+    await CallbackQuery.message.edit_text(
+        message_text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
 
 @app.on_callback_query(filters.regex("VOMODECHANGE") & ~BANNED_USERS)
 @ActualAdminCB
