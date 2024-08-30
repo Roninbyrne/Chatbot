@@ -377,7 +377,7 @@ async def digerbotlar_callback(client, CallbackQuery: CallbackQuery, _):
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(text=_["BACK_BUTTON"], callback_data="show_private_panel")]])
 
     await CallbackQuery.edit_message_text(
-        "🍀 <b>ɴᴜᴇsᴛʀᴏs ᴏᴛʀᴏs ʙᴏᴛs:</b>\n\n"
+        "🍀 <b>ᴏᴜʀ ᴀɴᴏᴛʜᴇʀ ʙᴏᴛ:</b>\n\n"
         "🍡 <a href='t.me/aronaYbot'>Aʀᴏɴᴀ 爱</a>\n",
         disable_web_page_preview=True,
         parse_mode=enums.ParseMode.HTML,
