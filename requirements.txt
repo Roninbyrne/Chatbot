@@ -1,6 +1,5 @@
 aiofiles
 aiohttp
-asyncio
 beautifulsoup4
 dnspython
 ffmpeg-python
@@ -14,6 +13,8 @@ py-tgcalls==0.9.7
 pykeyboard
 pyrofork
 python-dotenv
+pyrogram
+pytgcalls
 pyyaml
 requests
 speedtest-cli
