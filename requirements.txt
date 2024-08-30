@@ -9,11 +9,11 @@ heroku3
 motor
 pillow
 psutil
+py-tgcalls==0.9.7
 pykeyboard
 pyrofork
 python-dotenv
 pyrogram
-pytgcalls
 pyyaml
 requests
 speedtest-cli
