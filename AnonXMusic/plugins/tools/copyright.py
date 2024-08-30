@@ -3,6 +3,7 @@ from AnonXMusic import app
 from pyrogram import Client, filters
 from pyrogram.errors import RPCError
 from pyrogram.types import Message
+from pyrogram.enums import ChatMembersFilter  # Import the enum
 from os import environ
 
 # Dictionary to store the status of safety checks per chat
@@ -13,7 +14,7 @@ exception_list = {}
 # Function to get admin user IDs
 async def get_admins(client: Client, chat_id: int):
     admins = []
-    async for member in client.get_chat_members(chat_id, filter="administrators"):
+    async for member in client.get_chat_members(chat_id, filter=ChatMembersFilter.ADMINISTRATORS):  # Use the enum here
         admins.append(member.user.id)
     return admins
 
