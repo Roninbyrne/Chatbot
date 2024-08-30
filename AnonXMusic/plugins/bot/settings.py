@@ -365,6 +365,24 @@ async def authusers_mar(client, CallbackQuery, _):
     except MessageNotModified:
         return
 
+@app.on_callback_query(filters.regex("digerbotlar") & ~BANNED_USERS)
+@languageCB
+async def digerbotlar_callback(client, CallbackQuery: CallbackQuery, _):
+    try:
+        await CallbackQuery.answer()
+    except:
+        pass
+
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton(text=_["BACK_BUTTON"], callback_data="show_private_panel")]])
+
+    await CallbackQuery.edit_message_text(
+        "🍀 <b>ɴᴜᴇsᴛʀᴏs ᴏᴛʀᴏs ʙᴏᴛs:</b>\n\n"
+        "🍡 <a href='t.me/aronaYbot'>Aʀᴏɴᴀ 爱</a>\n",
+        disable_web_page_preview=True,
+        parse_mode=enums.ParseMode.HTML,
+        reply_markup=keyboard
+    )
+
 
 @app.on_callback_query(filters.regex("VOMODECHANGE") & ~BANNED_USERS)
 @ActualAdminCB
