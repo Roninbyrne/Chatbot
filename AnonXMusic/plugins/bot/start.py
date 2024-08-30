@@ -6,10 +6,10 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from youtubesearchpython.__future__ import VideosSearch
 
 import config
-from AnonXMusic import app
-from AnonXMusic.misc import _boot_
-from AnonXMusic.plugins.sudo.sudoers import sudoers_list
-from AnonXMusic.utils.database import (
+from AnonXmusic import app
+from AnonXmusic.misc import _boot_
+from AnonXmusic.plugins.sudo.sudoers import sudoers_list
+from AnonXmusic.utils.database import (
     add_served_chat,
     add_served_user,
     blacklisted_chats,
@@ -17,9 +17,9 @@ from AnonXMusic.utils.database import (
     is_banned_user,
     is_on_off,
 )
-from AnonXMusic.utils.decorators.language import LanguageStart
-from AnonXMusic.utils.formatters import get_readable_time
-from AnonXMusic.utils.inline import help_pannel, private_panel, start_panel
+from AnonXmusic.utils.decorators.language import LanguageStart
+from AnonXmusic.utils.formatters import get_readable_time
+from AnonXmusic.utils.inline import help_pannel, private_panel, start_panel
 from config import BANNED_USERS
 from strings import get_string
 
@@ -32,9 +32,8 @@ async def start_pm(client, message: Message, _):
         name = message.text.split(None, 1)[1]
         if name[0:4] == "help":
             keyboard = help_pannel(_)
-            return await message.reply_photo(
-                photo=config.START_IMG_URL,
-                caption=_["help_1"].format(config.SUPPORT_CHAT),
+            return await message.reply(
+                text=f"ᴄʜᴏᴏsᴇ ᴛʜᴇ ᴄᴀᴛᴇɢᴏʀʏ ғᴏʀ ᴡʜɪᴄʜ ʏᴏᴜ ᴡᴀɴɴᴀ ɢᴇᴛ ʜᴇʟᴩ.\nᴀsᴋ ʏᴏᴜʀ ᴅᴏᴜʙᴛs ᴀᴛ <a href={config.SUPPORT_CHAT}>sᴜᴘᴘᴏʀᴛ ᴄʜᴀᴛ</a>\n\nᴀʟʟ ᴄᴏᴍᴍᴀɴᴅs ᴄᴀɴ ʙᴇ ᴜsᴇᴅ ᴡɪᴛʜ : <code>/</code><a href='{config.START_IMG_URL}'> .</a>",
                 reply_markup=keyboard,
             )
         if name[0:3] == "sud":
@@ -46,7 +45,7 @@ async def start_pm(client, message: Message, _):
                 )
             return
         if name[0:3] == "inf":
-            m = await message.reply_text("🔎")
+            m = await message.reply_text("🧪")
             query = (str(name)).replace("info_", "", 1)
             query = f"https://www.youtube.com/watch?v={query}"
             results = VideosSearch(query, limit=1)
@@ -84,11 +83,9 @@ async def start_pm(client, message: Message, _):
                 )
     else:
         out = private_panel(_)
-        await message.reply_photo(
-            photo=config.START_IMG_URL,
-            caption=_["start_2"].format(message.from_user.mention, app.mention),
-            reply_markup=InlineKeyboardMarkup(out),
-        )
+        await message.reply(f" нєу {message.from_user.first_name} <a href='{config.START_VIDEO}'>❄️</a>")
+        await message.reply(f"<b>๏ 𝙷𝚎𝚢 𝚝𝚑𝚎𝚛𝚎! 𝙸'𝚖 {app.mention} 𝙱𝚘𝚝! \n๏ ᴀ ʟᴀᴛᴇꜱᴛ ᴄʜᴀᴛ ʙᴏᴛ & ɢʀᴏᴜᴘ ᴘʀᴏᴛᴇᴄᴛɪɴɢ ʙᴏᴛ.\n๏ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ᴀʙᴏᴜᴛ ᴍʏ ᴄᴏᴍᴍᴀɴᴅs</b>", reply_markup=InlineKeyboardMarkup(out))
+
         if await is_on_off(2):
             return await app.send_message(
                 chat_id=config.LOGGER_ID,
@@ -101,9 +98,7 @@ async def start_pm(client, message: Message, _):
 async def start_gp(client, message: Message, _):
     out = start_panel(_)
     uptime = int(time.time() - _boot_)
-    await message.reply_photo(
-        photo=config.START_IMG_URL,
-        caption=_["start_1"].format(app.mention, get_readable_time(uptime)),
+    await message.reply(text=f"{app.mention} ɪs ᴀʟɪᴠᴇ ʙᴀʙʏ.\n\n<b>✫ ᴜᴘᴛɪᴍᴇ :</b> {get_readable_time(uptime)}<a href='{config.PING_IMG_URL}'> .</a>",
         reply_markup=InlineKeyboardMarkup(out),
     )
     return await add_served_chat(message.chat.id)
@@ -136,17 +131,17 @@ async def welcome(client, message: Message):
                     return await app.leave_chat(message.chat.id)
 
                 out = start_panel(_)
-                await message.reply_photo(
-                    photo=config.START_IMG_URL,
-                    caption=_["start_3"].format(
-                        message.from_user.first_name,
-                        app.mention,
-                        message.chat.title,
-                        app.mention,
-                    ),
-                    reply_markup=InlineKeyboardMarkup(out),
-                )
+                await message.reply(
+    text=f"ʜᴇʏ {message.from_user.first_name},\nᴛʜɪs ɪs {app.mention}\n\nᴛʜᴀɴᴋs ғᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ ɪɴ {message.chat.title}, { app.mention} ᴄᴀɴ ɴᴏᴡ ᴩʟᴀʏ sᴏɴɢs ɪɴ ᴛʜɪs ᴄʜᴀᴛ.<a href='https://graph.org//file/50edce431f75286f6e9f5.mp4'> .</a>",
+    reply_markup=InlineKeyboardMarkup(out),
+)
+
                 await add_served_chat(message.chat.id)
+                await client.send_message(config.LOGGER_ID,
+    text=f"""ʙᴏᴛ ᴀᴅᴅᴇᴅ ɪɴ {message.chat.title}
+    {app.mention} ᴄᴀɴ ɴᴏᴡ ᴩʟᴀʏ sᴏɴɢs ɪɴ ᴛʜɪs ᴄʜᴀᴛ.-
+    ᴛʜᴀɴᴋs ғᴏʀ ᴀᴅᴅɪɴɢ ᴍᴇ """)
                 await message.stop_propagation()
+
         except Exception as ex:
             print(ex)
