@@ -83,7 +83,7 @@ async def start_pm(client, message: Message, _):
                 )
     else:
         out = private_panel(_)
-        await message.reply(f" нєу {message.from_user.first_name} <a href='{config.START_VIDEO}'>❄️</a>")
+        await message.reply(f" нєу {message.from_user.first_name} <a href="https://graph.org//file/50edce431f75286f6e9f5.mp4">❄️</a>")
         await message.reply(f"<b>๏ 𝙷𝚎𝚢 𝚝𝚑𝚎𝚛𝚎! 𝙸'𝚖 {app.mention} 𝙱𝚘𝚝! \n๏ ᴀ ʟᴀᴛᴇꜱᴛ ᴄʜᴀᴛ ʙᴏᴛ & ɢʀᴏᴜᴘ ᴘʀᴏᴛᴇᴄᴛɪɴɢ ʙᴏᴛ.\n๏ ᴄʟɪᴄᴋ ᴏɴ ᴛʜᴇ ʙᴜᴛᴛᴏɴ ʙᴇʟᴏᴡ ᴛᴏ ɢᴇᴛ ɪɴғᴏʀᴍᴀᴛɪᴏɴ ᴀʙᴏᴜᴛ ᴍʏ ᴄᴏᴍᴍᴀɴᴅs</b>", reply_markup=InlineKeyboardMarkup(out))
 
         if await is_on_off(2):
