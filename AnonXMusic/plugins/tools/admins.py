@@ -452,11 +452,12 @@ async def purge_messages(client, message):
 
         # Delete messages starting from the reply message
         async for msg in client.get_chat_history(message.chat.id, from_message_id=start_message_id):
-            await client.delete_messages(message.chat.id, msg.message_id)
+            if hasattr(msg, 'message_id'):  # Ensure 'msg' has 'message_id'
+                await client.delete_messages(message.chat.id, msg.message_id)
 
         # Notify completion
         completed_message = await message.reply_text("Purge completed.")
-        
+
         # Delete the completion message after 4 seconds
         await asyncio.sleep(4)
         await completed_message.delete()
