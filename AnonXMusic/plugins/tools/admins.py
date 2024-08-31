@@ -28,6 +28,7 @@ async def is_administrator(user_id: int, message, client):
 
 @app.on_message(filters.command(["ban"]))
 async def banuser(client: Client, message: Message):
+    user_mention = None
     try:
         if not await is_administrator(message.from_user.id, message, client):
             msg = await message.reply_text("You can't do that")
@@ -49,10 +50,9 @@ async def banuser(client: Client, message: Message):
 
         await client.ban_chat_member(message.chat.id, user_id)
         msg = await message.reply_text(f"🚫 Banned {user_mention}.")
-        await asyncio.sleep(5)
-        await msg.delete()
-
+    
     except Exception as e:
         msg = await message.reply_text(f"Failed to ban {user_mention} due to {e}.")
-        await asyncio.sleep(5)
-        await msg.delete()
+    
+    await asyncio.sleep(5)
+    await msg.delete()
