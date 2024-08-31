@@ -56,25 +56,26 @@ async def banuser(client, message):
         if message.reply_to_message:
             user_id = message.reply_to_message.from_user.id
         elif len(message.command) > 1:
+            # Split command text based on spaces, but handle the case where reason might include spaces
             args = message.text.split(None, 1)[1]
             if args.startswith('@'):
                 # Handle username
-                username = args[1:]  # Remove '@'
+                username = args[1:].split()[0]  # Extract username
                 user_id = await resolve_username_to_id(username, client)
                 if user_id is None:
                     await message.reply_text("Username not found.")
                     return
+                # Extract reason if available
+                reason = ' '.join(args.split()[1:])
             else:
                 # Handle user ID
                 try:
-                    user_id = int(args)
+                    user_id = int(args.split()[0])
                 except ValueError:
                     await message.reply_text("Invalid user ID.")
                     return
-
-        # Check if a reason was provided
-        if len(message.command) > 2:
-            reason = message.text.split(None, 2)[2]
+                # Extract reason if available
+                reason = ' '.join(args.split()[1:])
 
         if user_id is None:
             await message.reply_text("Please specify a user to ban.")
