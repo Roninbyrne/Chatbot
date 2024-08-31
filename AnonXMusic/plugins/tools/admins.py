@@ -157,3 +157,77 @@ async def unbanuser(client, message):
     except Exception as e:
         # Handle errors
         await message.reply_text(f"Failed to unban user due to {e}.")
+
+
+@app.on_message(filters.command(["mute"], prefixes=["/", "!"]) & (filters.group | filters.channel))
+async def mute_user(client, message):
+    user_id = None  # Initialize user_id
+    reason = None  # Initialize reason
+    try:
+        # Check if the message sender is an administrator
+        if not await is_administrator(message.from_user.id, message, client):
+            await message.reply_text("You can't do that.")
+            return
+
+        # Check if the bot itself is an administrator
+        if not await is_bot_administrator(message, client):
+            await message.reply_text("I need to be an administrator to perform this action.")
+            return
+
+        # Determine user to mute and reason
+        if message.reply_to_message:
+            user_id = message.reply_to_message.from_user.id
+        elif len(message.command) > 1:
+            # Split command text based on spaces, but handle the case where reason might include spaces
+            args = message.text.split(None, 1)[1]
+            if args.startswith('@'):
+                # Handle username
+                username = args[1:].split()[0]  # Extract username
+                user_id = await resolve_username_to_id(username, client)
+                if user_id is None:
+                    await message.reply_text("Username not found.")
+                    return
+                # Extract reason if available
+                reason = ' '.join(args.split()[1:])
+            else:
+                # Handle user ID
+                try:
+                    user_id = int(args.split()[0])
+                except ValueError:
+                    await message.reply_text("Invalid user ID.")
+                    return
+                # Extract reason if available
+                reason = ' '.join(args.split()[1:])
+
+        if user_id is None:
+            await message.reply_text("Please specify a user to mute.")
+            return
+
+        # Perform mute
+        await client.restrict_chat_member(
+            message.chat.id,
+            user_id,
+            permissions=types.ChatPermissions(
+                can_send_messages=False,
+                can_send_media_messages=False,
+                can_send_polls=False,
+                can_send_other_messages=False,
+                can_add_web_page_previews=False,
+                can_change_info=False,
+                can_invite_users=False,
+                can_pin_messages=False
+            )
+        )
+
+        # Get user and admin info
+        user = await client.get_users(user_id)
+        admin_name = message.from_user.first_name
+        user_name = user.first_name
+        reason_text = f" Reason: {reason}" if reason else ""
+
+        # Send a new message to notify about the mute
+        await message.reply_text(f"{user_name} has been muted by {admin_name}.{reason_text}")
+
+    except Exception as e:
+        # Handle errors
+        await message.reply_text(f"Failed to mute user due to {e}.")
