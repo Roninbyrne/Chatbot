@@ -488,66 +488,91 @@ async def purge(c: Client, m: Message):
         await m.reply_text("Reply to a message to start purge!")
 
 
-# Function to check if the sender is an administrator
-async def is_administrator(user_id, message, client):
-    chat_member = await client.get_chat_member(message.chat.id, user_id)
-    return chat_member.status in ["administrator", "creator"]
-
-# Function to get the admin's current permissions
-async def get_admin_permissions(message, client):
-    chat_member = await client.get_chat_member(message.chat.id, message.from_user.id)
-    return chat_member.privileges
-
-@app.on_message(filters.command(["promote"], prefixes=["/", "!"]) & (filters.group | filters.channel))
-async def promote_user(client, message):
+@app.on_message(filters.command(["promote", "fullpromote"], prefixes=["/", "!"]) & (filters.group | filters.channel))
+async def promote_func(client, message):
     try:
-        if not await is_administrator(message.from_user.id, message, client):
-            await message.reply_text("You are not an administrator.")
-            return
-
-        if not await is_bot_administrator(message, client):
-            await message.reply_text("I need to be an administrator to perform this action.")
-            return
-
+        # Check if the message is a reply or contains a user ID
         if message.reply_to_message:
-            user_id = message.reply_to_message.from_user.id
+            user = message.reply_to_message.from_user.id
         elif len(message.command) > 1:
-            user_id = int(message.command[1])
+            user = message.text.split(None, 1)[1]
         else:
-            await message.reply_text("Please specify a user to promote.")
+            await message.edit_text("Invalid command usage.")
+            await asyncio.sleep(5)
+            await message.delete()
             return
 
-        promote_permissions = ChatPermissions(
-            can_send_messages=True,
-            can_send_media_messages=True,
-            can_send_polls=True,
-            can_send_other_messages=True,
-            can_add_web_page_previews=True,
-            can_change_info=False,
-            can_invite_to_group=False,
-            can_pin_messages=False
+        # Check if the command issuer is an admin
+        if not await is_administrator(message.from_user.id, message, client):
+            await message.edit_text("You are not an admin and cannot use this command.")
+            await asyncio.sleep(5)
+            await message.delete()
+            return
+
+        # Check if the bot is an admin
+        if not await is_bot_administrator(message, client):
+            await message.edit_text("The bot is not an admin and cannot promote members.")
+            await asyncio.sleep(5)
+            await message.delete()
+            return
+
+        # Check the admin's permissions
+        admin_privileges = (await client.get_chat_member(message.chat.id, message.from_user.id)).privileges
+        bot_privileges = (await client.get_chat_member(message.chat.id, client.me.id)).privileges
+
+        if not admin_privileges.can_promote_members:
+            await message.edit_text("You do not have permission to promote members.")
+            await asyncio.sleep(5)
+            await message.delete()
+            return
+
+        # Retrieve user mention
+        umention = (await client.get_users(user)).mention
+
+        if not umention:
+            await message.edit_text("Invalid ID or user not found.")
+            await asyncio.sleep(5)
+            await message.delete()
+            return
+
+        # Grant permissions based on the admin's rights
+        privileges = ChatPrivileges(
+            can_change_info=admin_privileges.can_change_info,
+            can_invite_users=admin_privileges.can_invite_users,
+            can_delete_messages=admin_privileges.can_delete_messages,
+            can_restrict_members=admin_privileges.can_restrict_members,
+            can_pin_messages=admin_privileges.can_pin_messages,
+            can_promote_members=admin_privileges.can_promote_members,
+            can_manage_chat=admin_privileges.can_manage_chat,
+            can_manage_video_chats=admin_privileges.can_manage_video_chats,
         )
 
-        admin_permissions = await get_admin_permissions(message, client)
+        if message.command[0] == "fullpromote":
+            await message.chat.promote_member(user_id=user, privileges=privileges)
+            final_msg = await message.edit_text("User has been fully promoted.")
+        else:
+            # Basic promotion: only grant specific permissions
+            basic_privileges = ChatPrivileges(
+                can_change_info=False,
+                can_invite_users=admin_privileges.can_invite_users,
+                can_delete_messages=admin_privileges.can_delete_messages,
+                can_restrict_members=False,  # No banning rights
+                can_pin_messages=admin_privileges.can_pin_messages,
+                can_promote_members=False,
+                can_manage_chat=admin_privileges.can_manage_chat,
+                can_manage_video_chats=admin_privileges.can_manage_video_chats,
+            )
+            await message.chat.promote_member(user_id=user, privileges=basic_privileges)
+            final_msg = await message.edit_text("User has been promoted.")
 
-        effective_permissions = ChatPermissions(
-            can_send_messages=promote_permissions.can_send_messages and admin_permissions.can_send_messages,
-            can_send_media_messages=promote_permissions.can_send_media_messages and admin_permissions.can_send_media_messages,
-            can_send_polls=promote_permissions.can_send_polls and admin_permissions.can_send_polls,
-            can_send_other_messages=promote_permissions.can_send_other_messages and admin_permissions.can_send_other_messages,
-            can_add_web_page_previews=promote_permissions.can_add_web_page_previews and admin_permissions.can_add_web_page_previews,
-            can_change_info=promote_permissions.can_change_info and admin_permissions.can_change_info,
-            can_invite_to_group=promote_permissions.can_invite_to_group and admin_permissions.can_invite_to_group,
-            can_pin_messages=promote_permissions.can_pin_messages and admin_permissions.can_pin_messages
-        )
-
-        await client.promote_chat_member(message.chat.id, user_id, permissions=effective_permissions)
-
-        user = await client.get_users(user_id)
-        admin_name = message.from_user.first_name
-        user_name = user.first_name
-
-        await message.reply_text(f"{user_name} has been promoted by {admin_name}.")
-
+    except BadRequest as e:
+        await message.edit_text(f"An error occurred: {e}")
+        await asyncio.sleep(5)
+        await message.delete()
     except Exception as e:
-        await message.reply_text(f"Failed to promote user due to {str(e)}.")
+        await message.edit_text(f"An unexpected error occurred: {e}")
+        await asyncio.sleep(5)
+        await message.delete()
+    else:
+        await asyncio.sleep(5)
+        await final_msg.delete()
