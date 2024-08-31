@@ -31,6 +31,11 @@ async def banuser(client, message):
             await message.reply_text("You can't do that.")
             return
 
+        # Check if the bot itself is an administrator
+        if not await is_bot_administrator(message, client):
+            await message.reply_text("I need to be an administrator to perform this action.")
+            return
+
         # Determine user to ban
         if message.reply_to_message:
             user_id = message.reply_to_message.from_user.id
