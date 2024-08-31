@@ -428,7 +428,7 @@ async def timed_mute_user(client, message):
 
 
 @app.on_message(filters.command(["purge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
-async def purge_messages(client, message):
+async def purge_messages(client: Client, message):
     try:
         # Check if the message sender is an administrator
         if not await is_administrator(message.from_user.id, message, client):
@@ -444,8 +444,16 @@ async def purge_messages(client, message):
         await message.delete()
 
         repliedmsg = message.reply_to_message
-        if not repliedmsg:
+        
+        if repliedmsg is None:
             error_msg = await message.reply_text("Reply to the message you want to delete.")
+            await asyncio.sleep(2)
+            await error_msg.delete()
+            return
+
+        # Ensure repliedmsg has the required attribute
+        if not hasattr(repliedmsg, 'message_id'):
+            error_msg = await message.reply_text("Invalid message to delete.")
             await asyncio.sleep(2)
             await error_msg.delete()
             return
