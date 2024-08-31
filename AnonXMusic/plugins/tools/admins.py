@@ -6,7 +6,8 @@ from pyrogram.types import (
     InlineKeyboardMarkup,
     ChatPermissions,
     ChatPrivileges,
-    Message
+    Message,
+    ChatMember  # Added import for ChatMember
 )
 from pyrogram.enums import ChatMembersFilter, ChatType
 from pyrogram.errors.exceptions.bad_request_400 import (
@@ -14,7 +15,7 @@ from pyrogram.errors.exceptions.bad_request_400 import (
     UserAdminInvalid,
     BadRequest
 )
-from pyrogram.errors import UsernameNotOccupied, UserNotParticipant, FloodWait
+from pyrogram.errors import UsernameNotOccupied, UserNotParticipant, FloodWait, MessageDeleteForbidden, RPCError  # Added imports for MessageDeleteForbidden and RPCError
 from AnonXMusic import app  # Importing the app object from your project
 
 async def is_administrator(user_id: int, message, client):
@@ -428,9 +429,17 @@ async def timed_mute_user(client, message):
 
 
 @app.on_message(filters.command(["purge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
-async def purge(c: app, m: Message):
-    if m.chat.type != ChatType.SUPERGROUP:
-        await m.reply_text(text="Cannot purge messages in a basic group")
+async def purge(c: Client, m: Message):
+    # Check if the user is an admin
+    try:
+        chat_member = await c.get_chat_member(m.chat.id, m.from_user.id)
+        if chat_member.status not in [ChatMember.OWNER, ChatMember.ADMINISTRATOR]:
+            await m.reply_text("You need to be an admin to use this command.")
+            return
+    except RPCError as ef:
+        await m.reply_text(
+            text=f"Error checking admin status: <code>{ef}</code>"
+        )
         return
 
     if m.reply_to_message:
@@ -438,9 +447,9 @@ async def purge(c: app, m: Message):
 
         def divide_chunks(l: list, n: int = 100):
             for i in range(0, len(l), n):
-                yield l[i : i + n]
+                yield l[i: i + n]
 
-        # Dielete messages in chunks of 100 messages
+        # Delete messages in chunks of 100 messages
         m_list = list(divide_chunks(message_ids))
 
         try:
@@ -453,21 +462,21 @@ async def purge(c: app, m: Message):
             await m.delete()
         except MessageDeleteForbidden:
             await m.reply_text(
-                text="Cannot delete all messages. The messages may be too old, I might not have delete rights, or this might not be a supergroup."
+                text="Cannot delete all messages. The messages may be too old, I might not have delete rights, or this might not be a valid chat."
             )
             return
         except RPCError as ef:
             await m.reply_text(
-                text=f"""Some error occured, report to @{SUPPORT_CHAT}
+                text=f"""Some error occurred, report to @{SUPPORT_CHAT}
 
       <b>Error:</b> <code>{ef}</code>"""
             )
+            return
 
         count_del_msg = len(message_ids)
 
         z = await m.reply_text(text=f"Deleted <i>{count_del_msg}</i> messages")
         await sleep(3)
         await z.delete()
-        return
-    await m.reply_text("Reply to a message to start purge !")
-    return
+    else:
+        await m.reply_text("Reply to a message to start purge!")
