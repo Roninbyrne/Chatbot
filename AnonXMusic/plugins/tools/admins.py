@@ -476,3 +476,33 @@ async def purge(_, ctx: Message):
         error_msg = await ctx.reply(f"ERROR: {err}")
         await asyncio.sleep(5)
         await error_msg.delete()
+
+@app.on_message(filters.command("spurge") & admin_filter)
+async def spurge(app: app, msg: Message):
+
+    if msg.chat.type != ChatType.SUPERGROUP:
+        await msg.reply_text(text="**ɪ ᴄᴀɴ'ᴛ ᴘᴜʀɢᴇ ᴍᴇssᴀɢᴇs ɪɴ ᴀ ʙᴀsɪᴄ ɢʀᴏᴜᴘ ᴍᴀᴋᴇ sᴜᴘᴇʀ ɢʀᴏᴜᴘ.**")
+        return
+
+    if msg.reply_to_message:
+        message_ids = list(range(msg.reply_to_message.id, msg.id))
+
+        def divide_chunks(l: list, n: int = 100):
+            for i in range(0, len(l), n):
+                yield l[i : i + n]
+
+        m_list = list(divide_chunks(message_ids))
+
+        try:
+            for plist in m_list:
+                await app.delete_messages(chat_id=msg.chat.id, message_ids=plist, revoke=True)
+            await msg.delete()
+        except MessageDeleteForbidden:
+            await msg.reply_text(text="**ɪ ᴄᴀɴ'ᴛ ᴅᴇʟᴇᴛᴇ ᴀʟʟ ᴍᴇssᴀɢᴇs. ᴛʜᴇ ᴍᴇssᴀɢᴇs ᴍᴀʏ ʙᴇ ᴛᴏᴏ ᴏʟᴅ, ɪ ᴍɪɢʜᴛ ɴᴏᴛ ʜᴀᴠᴇ ᴅᴇʟᴇᴛᴇ ʀɪɢʜᴛs, ᴏʀ ᴛʜɪs ᴍɪɢʜᴛ ɴᴏᴛ ʙᴇ ᴀ sᴜᴘᴇʀɢʀᴏᴜᴘ.**")
+            return
+
+        except RPCError as ef:
+            await msg.reply_text(text=f"**sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀᴇᴅ, ʀᴇᴘᴏʀᴛ ɪᴛ ᴜsɪɴɢ** `/bug`<b>ᴇʀʀᴏʀ:</b> <code>{ef}</code>")           
+            return        
+    await msg.reply_text("**ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ sᴛᴀʀᴛ ᴘᴜʀɢᴇ !**")
+    return
