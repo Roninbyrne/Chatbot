@@ -25,15 +25,12 @@ def private_panel(_):
             )
         ],
         [
+            InlineKeyboardButton(text="ᴄʜᴀɴɴᴇʟ", url=f"https://t.me/About_baba"),
             InlineKeyboardButton(text=_["S_B_2"], url=config.SUPPORT_CHAT),
-            InlineKeyboardButton(text=_["S_B_6"], url=config.SUPPORT_CHANNEL),
         ],
-
-        [
-            [InlineKeyboardButton(text=_["S_B_10"], callback_data="diggerbotlar")],
-
+                   [InlineKeyboardButton(text=_["S_B_10"], callback_data="diggerbotlar")],
+    ]
         ],
-         [InlineKeyboardButton(text=_["S_B_4"], callback_data="settings_back_helper")],
-
+       [InlineKeyboardButton(text=_["S_B_4"], callback_data="settings_back_helper")],
     ]
     return buttons
