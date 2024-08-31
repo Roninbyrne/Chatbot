@@ -428,81 +428,46 @@ async def timed_mute_user(client, message):
 
 
 @app.on_message(filters.command(["purge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
-async def purge(_, ctx: Message):
-    try:
-        repliedmsg = ctx.reply_to_message
-        if not repliedmsg:
-            error_msg = await ctx.reply("Reply to the message you want to delete.")
-            await asyncio.sleep(4)
-            await error_msg.delete()
-            return
-
-        # Check if the user is an admin
-        chat_id = ctx.chat.id
-        user_id = ctx.from_user.id
-        chat_member = await _.get_chat_member(chat_id, user_id)
-        
-        # Debug output to verify the user status
-        print(f"User status: {chat_member.status}")
-
-        if chat_member.status not in ['administrator', 'creator']:
-            error_msg = await ctx.reply("You must be an admin to use this command.")
-            await asyncio.sleep(4)
-            await error_msg.delete()
-            return
-
-        # Get command arguments
-        cmd_args = ctx.command[1:] if len(ctx.command) > 1 else []
-        if cmd_args and cmd_args[0].isdigit():
-            purge_to = repliedmsg.id + int(cmd_args[0])
-            purge_to = min(purge_to, ctx.message.id)
-        else:
-            purge_to = ctx.message.id
-
-        message_ids = list(range(repliedmsg.id, purge_to + 1))
-        del_total = 0
-
-        # Max message deletion limit is 100
-        for i in range(0, len(message_ids), 100):
-            chunk = message_ids[i:i + 100]
-            await _.delete_messages(chat_id=chat_id, message_ids=chunk, revoke=True)
-            del_total += len(chunk)
-
-        completion_msg = await ctx.reply("Purge completed.")
-        await asyncio.sleep(4)
-        await completion_msg.delete()
-
-    except Exception as err:
-        error_msg = await ctx.reply(f"ERROR: {err}")
-        await asyncio.sleep(5)
-        await error_msg.delete()
-
-@app.on_message(filters.command(["spurge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
-async def spurge(app: app, msg: Message):
-
-    if msg.chat.type != ChatType.SUPERGROUP:
-        await msg.reply_text(text="**ɪ ᴄᴀɴ'ᴛ ᴘᴜʀɢᴇ ᴍᴇssᴀɢᴇs ɪɴ ᴀ ʙᴀsɪᴄ ɢʀᴏᴜᴘ ᴍᴀᴋᴇ sᴜᴘᴇʀ ɢʀᴏᴜᴘ.**")
+async def purge(c: app, m: Message):
+    if m.chat.type != ChatType.SUPERGROUP:
+        await m.reply_text(text="Cannot purge messages in a basic group")
         return
 
-    if msg.reply_to_message:
-        message_ids = list(range(msg.reply_to_message.id, msg.id))
+    if m.reply_to_message:
+        message_ids = list(range(m.reply_to_message.id, m.id))
 
         def divide_chunks(l: list, n: int = 100):
             for i in range(0, len(l), n):
                 yield l[i : i + n]
 
+        # Dielete messages in chunks of 100 messages
         m_list = list(divide_chunks(message_ids))
 
         try:
             for plist in m_list:
-                await app.delete_messages(chat_id=msg.chat.id, message_ids=plist, revoke=True)
-            await msg.delete()
+                await c.delete_messages(
+                    chat_id=m.chat.id,
+                    message_ids=plist,
+                    revoke=True,
+                )
+            await m.delete()
         except MessageDeleteForbidden:
-            await msg.reply_text(text="**ɪ ᴄᴀɴ'ᴛ ᴅᴇʟᴇᴛᴇ ᴀʟʟ ᴍᴇssᴀɢᴇs. ᴛʜᴇ ᴍᴇssᴀɢᴇs ᴍᴀʏ ʙᴇ ᴛᴏᴏ ᴏʟᴅ, ɪ ᴍɪɢʜᴛ ɴᴏᴛ ʜᴀᴠᴇ ᴅᴇʟᴇᴛᴇ ʀɪɢʜᴛs, ᴏʀ ᴛʜɪs ᴍɪɢʜᴛ ɴᴏᴛ ʙᴇ ᴀ sᴜᴘᴇʀɢʀᴏᴜᴘ.**")
+            await m.reply_text(
+                text="Cannot delete all messages. The messages may be too old, I might not have delete rights, or this might not be a supergroup."
+            )
             return
-
         except RPCError as ef:
-            await msg.reply_text(text=f"**sᴏᴍᴇ ᴇʀʀᴏʀ ᴏᴄᴄᴜʀᴇᴅ, ʀᴇᴘᴏʀᴛ ɪᴛ ᴜsɪɴɢ** `/bug`<b>ᴇʀʀᴏʀ:</b> <code>{ef}</code>")           
-            return        
-    await msg.reply_text("**ʀᴇᴘʟʏ ᴛᴏ ᴀ ᴍᴇssᴀɢᴇ ᴛᴏ sᴛᴀʀᴛ ᴘᴜʀɢᴇ !**")
+            await m.reply_text(
+                text=f"""Some error occured, report to @{SUPPORT_CHAT}
+
+      <b>Error:</b> <code>{ef}</code>"""
+            )
+
+        count_del_msg = len(message_ids)
+
+        z = await m.reply_text(text=f"Deleted <i>{count_del_msg}</i> messages")
+        await sleep(3)
+        await z.delete()
+        return
+    await m.reply_text("Reply to a message to start purge !")
     return
