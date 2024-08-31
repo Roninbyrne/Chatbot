@@ -305,3 +305,118 @@ async def unmute_user(client, message):
     except Exception as e:
         # Handle errors
         await message.reply_text(f"Failed to unmute user due to {e}.")
+
+
+@app.on_message(filters.command(["tmute"], prefixes=["/", "!"]) & (filters.group | filters.channel))
+async def timed_mute_user(client, message):
+    user_id = None  # Initialize user_id
+    reason = None  # Initialize reason
+    duration = None  # Initialize duration
+    try:
+        # Check if the message sender is an administrator
+        if not await is_administrator(message.from_user.id, message, client):
+            await message.reply_text("You can't do that.")
+            return
+
+        # Check if the bot itself is an administrator
+        if not await is_bot_administrator(message, client):
+            await message.reply_text("I need to be an administrator to perform this action.")
+            return
+
+        # Determine user to mute, duration, and reason
+        if message.reply_to_message:
+            user_id = message.reply_to_message.from_user.id
+        elif len(message.command) > 1:
+            args = message.text.split(None, 2)
+            if len(args) < 2:
+                await message.reply_text("Usage: /tmute <user> <duration> [reason]")
+                return
+
+            user_input = args[1]
+            duration_input = args[2] if len(args) > 2 else '0s'
+            reason = args[3] if len(args) > 3 else None
+
+            if user_input.startswith('@'):
+                # Handle username
+                username = user_input[1:]
+                user_id = await resolve_username_to_id(username, client)
+                if user_id is None:
+                    await message.reply_text("Username not found.")
+                    return
+            else:
+                # Handle user ID
+                try:
+                    user_id = int(user_input)
+                except ValueError:
+                    await message.reply_text("Invalid user ID.")
+                    return
+
+            # Parse duration
+            duration_parts = duration_input.lower().strip()
+            if duration_parts.endswith('s'):
+                duration = int(duration_parts[:-1])  # seconds
+            elif duration_parts.endswith('m'):
+                duration = int(duration_parts[:-1]) * 60  # minutes
+            elif duration_parts.endswith('h'):
+                duration = int(duration_parts[:-1]) * 3600  # hours
+            elif duration_parts.endswith('d'):
+                duration = int(duration_parts[:-1]) * 86400  # days
+            else:
+                await message.reply_text("Invalid duration format. Use 's', 'm', 'h', or 'd'.")
+                return
+
+            if duration <= 0:
+                await message.reply_text("Duration must be greater than zero.")
+                return
+
+        if user_id is None:
+            await message.reply_text("Please specify a user to mute.")
+            return
+
+        # Perform mute
+        await client.restrict_chat_member(
+            message.chat.id,
+            user_id,
+            permissions=types.ChatPermissions(
+                can_send_messages=False,
+                can_send_media_messages=False,
+                can_send_polls=False,
+                can_send_other_messages=False,
+                can_add_web_page_previews=False,
+                can_change_info=False,
+                can_invite_users=False,
+                can_pin_messages=False
+            )
+        )
+
+        # Get user and admin info
+        user = await client.get_users(user_id)
+        admin_name = message.from_user.first_name
+        user_name = user.first_name
+        reason_text = f" Reason: {reason}" if reason else ""
+
+        # Send a notification about the mute
+        await message.reply_text(f"{user_name} has been muted by {admin_name}.{reason_text} Duration: {duration_input}")
+
+        # Wait for the specified duration and then unmute the user
+        await asyncio.sleep(duration)
+        await client.restrict_chat_member(
+            message.chat.id,
+            user_id,
+            permissions=types.ChatPermissions(
+                can_send_messages=True,
+                can_send_media_messages=True,
+                can_send_polls=True,
+                can_send_other_messages=True,
+                can_add_web_page_previews=True,
+                can_change_info=True,
+                can_invite_users=True,
+                can_pin_messages=True
+            )
+        )
+        await message.reply_text(f"{user_name} has been unmuted after {duration_input}.")
+
+    except FloodWait as e:
+        await message.reply_text(f"Too many requests. Please try again later. (Wait {e.x} seconds)")
+    except Exception as e:
+        await message.reply_text(f"Failed to mute user due to {e}.")
