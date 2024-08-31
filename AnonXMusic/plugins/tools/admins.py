@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
-from pyrogram import Client, filters
+from pyrogram import Client, filters, types  # Added 'types' here
 from pyrogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
