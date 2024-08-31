@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
-from pyrogram import filters, Client
+from pyrogram import Client, filters
 from pyrogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -14,14 +14,21 @@ from pyrogram.errors.exceptions.bad_request_400 import (
     UserAdminInvalid,
     BadRequest
 )
-from pyrogram.errors import UserNotParticipant
-from AnonXMusic import app
+from pyrogram.errors import UsernameNotOccupied, UserNotParticipant
+from AnonXMusic import app  # Importing the app object from your project
 
 async def is_administrator(user_id: int, message, client):
     async for m in client.get_chat_members(message.chat.id, filter=ChatMembersFilter.ADMINISTRATORS):
         if m.user.id == user_id:
             return True
     return False
+
+async def resolve_username_to_id(username: str, client):
+    try:
+        user = await client.get_users(username)
+        return user.id
+    except UsernameNotOccupied:
+        return None
 
 @app.on_message(filters.command(["ban"], prefixes=["/"]) & (filters.group | filters.channel))
 async def banuser(client, message):
@@ -37,13 +44,27 @@ async def banuser(client, message):
             return
 
         # Determine user to ban
+        user_id = None
         if message.reply_to_message:
             user_id = message.reply_to_message.from_user.id
-            user_mention = message.reply_to_message.from_user.mention
         elif len(message.command) > 1:
-            user_id = int(message.text.split(None, 1)[1])
-            user_mention = f"[User ID {user_id}](tg://user?id={user_id})"  # User mention link
-        else:
+            arg = message.text.split(None, 1)[1]
+            if arg.startswith('@'):
+                # Handle username
+                username = arg[1:]  # Remove '@'
+                user_id = await resolve_username_to_id(username, client)
+                if user_id is None:
+                    await message.reply_text("Username not found.")
+                    return
+            else:
+                # Handle user ID
+                try:
+                    user_id = int(arg)
+                except ValueError:
+                    await message.reply_text("Invalid user ID.")
+                    return
+
+        if user_id is None:
             await message.reply_text("Please specify a user to ban.")
             return
 
