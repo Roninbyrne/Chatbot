@@ -37,7 +37,7 @@ async def resolve_username_to_id(username: str, client):
     except UsernameNotOccupied:
         return None
 
-@app.on_message(filters.command(["ban"], prefixes=["/"]) & (filters.group | filters.channel))
+@app.on_message(filters.command(["ban"], prefixes=["/", "!"]) & (filters.group | filters.channel))
 async def banuser(client, message):
     user_id = None  # Initialize user_id
     reason = None  # Initialize reason
