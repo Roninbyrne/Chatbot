@@ -9,7 +9,7 @@ async def is_admin(user_id: int, chat_id: int, client: Client) -> bool:
             return True
     return False
 
-@app.on_message(filters.command(["ban"], prefixes=["."]) & (filters.group | filters.channel))
+@app.on_message(filters.group & filters.command("ban"))
 async def ban_user(client: Client, message: Message):
     try:
         # Check if the user issuing the command is an admin
