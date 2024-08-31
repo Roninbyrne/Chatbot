@@ -444,14 +444,14 @@ async def purge_messages(client: Client, message):
         await message.delete()
 
         repliedmsg = message.reply_to_message
-        
+
         if repliedmsg is None:
             error_msg = await message.reply_text("Reply to the message you want to delete.")
             await asyncio.sleep(2)
             await error_msg.delete()
             return
 
-        # Ensure repliedmsg has the required attribute
+        # Check if repliedmsg has a valid message_id
         if not hasattr(repliedmsg, 'message_id'):
             error_msg = await message.reply_text("Invalid message to delete.")
             await asyncio.sleep(2)
@@ -478,7 +478,7 @@ async def purge_messages(client: Client, message):
                 del_total += len(message_ids)
                 message_ids = []
 
-        # Delete if any messages left
+        # Delete any remaining messages
         if len(message_ids) > 0:
             await client.delete_messages(chat_id, message_ids, revoke=True)
             del_total += len(message_ids)
