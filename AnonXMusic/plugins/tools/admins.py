@@ -451,8 +451,8 @@ async def purge_messages(client: Client, message):
             await error_msg.delete()
             return
 
-        # Check if repliedmsg has a valid message_id
-        if not hasattr(repliedmsg, 'message_id'):
+        # Ensure repliedmsg has a valid message_id
+        if not hasattr(repliedmsg, 'message_id') or repliedmsg.message_id is None:
             error_msg = await message.reply_text("Invalid message to delete.")
             await asyncio.sleep(2)
             await error_msg.delete()
