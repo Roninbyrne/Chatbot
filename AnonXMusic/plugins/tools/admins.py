@@ -1,13 +1,13 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
-from pyrogram import Client, filters, types
+from pyrogram import Client, filters
 from pyrogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     ChatPermissions,
     ChatPrivileges,
     Message,
-    ChatMember  # Added import for ChatMember
+    ChatMemberStatus  # Use ChatMemberStatus for status checks
 )
 from pyrogram.enums import ChatMembersFilter, ChatType
 from pyrogram.errors.exceptions.bad_request_400 import (
@@ -15,8 +15,15 @@ from pyrogram.errors.exceptions.bad_request_400 import (
     UserAdminInvalid,
     BadRequest
 )
-from pyrogram.errors import UsernameNotOccupied, UserNotParticipant, FloodWait, MessageDeleteForbidden, RPCError  # Added imports for MessageDeleteForbidden and RPCError
+from pyrogram.errors import (
+    UsernameNotOccupied,
+    UserNotParticipant,
+    FloodWait,
+    MessageDeleteForbidden,
+    RPCError
+)
 from AnonXMusic import app  # Importing the app object from your project
+from asyncio import sleep
 
 async def is_administrator(user_id: int, message, client):
     async for m in client.get_chat_members(message.chat.id, filter=ChatMembersFilter.ADMINISTRATORS):
@@ -433,7 +440,7 @@ async def purge(c: Client, m: Message):
     # Check if the user is an admin
     try:
         chat_member = await c.get_chat_member(m.chat.id, m.from_user.id)
-        if chat_member.status not in [ChatMember.OWNER, ChatMember.ADMINISTRATOR]:
+        if chat_member.status not in [ChatMemberStatus.OWNER, ChatMemberStatus.ADMINISTRATOR]:
             await m.reply_text("You need to be an admin to use this command.")
             return
     except RPCError as ef:
