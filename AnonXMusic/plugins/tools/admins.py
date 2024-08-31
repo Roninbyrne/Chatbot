@@ -145,97 +145,117 @@ async def unmute_user(user_id, first_name, admin_id, admin_name, chat_id):
 
 
 @app.on_message(filters.command(["ban"]))
-async def ban_command_handler(client, message):
+async def ban_command_handler(client: Client, message: Message):
     chat = message.chat
     chat_id = chat.id
     admin_id = message.from_user.id
     admin_name = message.from_user.first_name
-    member = await chat.get_member(admin_id)
-    if member.status == enums.ChatMemberStatus.ADMINISTRATOR or member.status == enums.ChatMemberStatus.OWNER:
-        if member.privileges.can_restrict_members:
-            pass
-        else:
-            msg_text = "ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ"
-            return await message.reply_text(msg_text)
-    else:
-        msg_text = "ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ"
-        return await message.reply_text(msg_text)
 
-    # Extract the user ID from the command or reply
+    try:
+        member = await chat.get_member(admin_id)
+    except Exception as e:
+        return await message.reply_text(f"Error: {str(e)}")
+
+    if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+        return await message.reply_text("ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ")
+
+    if not member.privileges.can_restrict_members:
+        return await message.reply_text("ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ")
+
+    user_id, first_name, reason = None, None, None
     if len(message.command) > 1:
         if message.reply_to_message:
             user_id = message.reply_to_message.from_user.id
             first_name = message.reply_to_message.from_user.first_name
-            reason = message.text.split(None, 1)[1]
+            reason = message.text.split(None, 1)[1] if len(message.text.split(None, 1)) > 1 else None
         else:
             try:
                 user_id = int(message.command[1])
                 first_name = "User"
-            except:
-                user_obj = await get_userid_from_username(message.command[1])
-                if user_obj == None:
-                    return await message.reply_text("ɪ ᴄᴀɴ'ᴛ ꜰɪɴᴅ ᴛʜᴀᴛ ᴜꜱᴇʀ")
-                user_id = user_obj[0]
-                first_name = user_obj[1]
-
-            try:
-                reason = message.text.partition(message.command[1])[2]
-            except:
-                reason = None
-
+                reason = message.text.partition(message.command[1])[2].strip() or None
+            except ValueError:
+                try:
+                    user_obj = await get_userid_from_username(message.command[1])
+                    if user_obj is None:
+                        return await message.reply_text("ɪ ᴄᴀɴ'ᴛ ꜰɪɴᴅ ᴛʜᴀᴛ ᴜꜱᴇʀ")
+                    user_id, first_name = user_obj
+                    reason = message.text.partition(message.command[1])[2].strip() or None
+                except Exception as e:
+                    return await message.reply_text(f"Error: {str(e)}")
     elif message.reply_to_message:
         user_id = message.reply_to_message.from_user.id
         first_name = message.reply_to_message.from_user.first_name
         reason = None
     else:
-        await message.reply_text("ᴘʟᴇᴀꜱᴇ ꜱᴘᴇᴄɪꜰʏ ᴀ ᴠᴀʟɪᴅ ᴜꜱᴇʀ ᴏʀ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴀᴛ ᴜꜱᴇʀ'ꜱ ᴍᴇꜱꜱᴀɢᴇ")
-        return
+        return await message.reply_text("ᴘʟᴇᴀꜱᴇ ꜱᴘᴇᴄɪꜰʏ ᴀ ᴠᴀʟɪᴅ ᴜꜱᴇʀ ᴏʀ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴀᴛ ᴜꜱᴇʀ'ꜱ ᴍᴇꜱꜱᴀɢᴇ")
 
-    msg_text, result = await ban_user(user_id, first_name, admin_id, admin_name, chat_id, reason)
-    if result == True:
+    try:
+        msg_text, result = await ban_user(user_id, first_name, admin_id, admin_name, chat_id, reason)
         await message.reply_text(msg_text)
-    if result == False:
-        await message.reply_text(msg_text)
+    except ChatAdminRequired:
+        await message.reply_text("ʏᴏᴜ ᴍᴜꜱᴛ ʜᴀᴠᴇ ᴀᴅᴍɪɴ ᴘᴇʀᴍɪꜱꜱɪᴏɴꜱ ᴛᴏ ʙᴀɴ ᴜꜱᴇʀꜱ")
+    except UserNotParticipant:
+        await message.reply_text("ᴛʜᴇ ᴜꜱᴇʀ ɪs ɴᴏᴛ ᴘᴀʀᴛɪᴄɪᴘᴀɴᴛ ɪɴ ᴛʜɪs ᴄʜᴀᴛ")
+    except Exception as e:
+        await message.reply_text(f"Error: {str(e)}")
 
 
 @app.on_message(filters.command(["unban"]))
-async def unban_command_handler(client, message):
+async def unban_command_handler(client: Client, message: Message):
     chat = message.chat
     chat_id = chat.id
     admin_id = message.from_user.id
     admin_name = message.from_user.first_name
-    member = await chat.get_member(admin_id)
-    if member.status == enums.ChatMemberStatus.ADMINISTRATOR or member.status == enums.ChatMemberStatus.OWNER:
-        if member.privileges.can_restrict_members:
-            pass
-        else:
-            msg_text = "ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴜɴʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ"
-            return await message.reply_text(msg_text)
-    else:
-        msg_text = "ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴜɴʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ"
-        return await message.reply_text(msg_text)
 
-    # Extract the user ID from the command or reply
+    try:
+        member = await chat.get_member(admin_id)
+    except Exception as e:
+        return await message.reply_text(f"Error: {str(e)}")
+
+    if member.status not in [enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+        return await message.reply_text("ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴜɴʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ")
+
+    if not member.privileges.can_restrict_members:
+        return await message.reply_text("ʏᴏᴜ ᴅᴏɴᴛ ʜᴀᴠᴇ ᴘᴇʀᴍɪꜱꜱɪᴏɴ ᴛᴏ ᴜɴʙᴀɴ ꜱᴏᴍᴇᴏɴᴇ")
+
+    # Extract user ID and name
+    user_id, first_name = None, None
     if len(message.command) > 1:
         try:
             user_id = int(message.command[1])
             first_name = "User"
-        except:
-            user_obj = await get_userid_from_username(message.command[1])
-            if user_obj == None:
+        except ValueError:
+            try:
+                user_obj = await get_userid_from_username(message.command[1])
+                if user_obj is None:
                     return await message.reply_text("ɪ ᴄᴀɴ'ᴛ ꜰɪɴᴅ ᴛʜᴀᴛ ᴜꜱᴇʀ")
-            user_id = user_obj[0]
-            first_name = user_obj[1]
-
+                user_id, first_name = user_obj
+            except Exception as e:
+                return await message.reply_text(f"Error: {str(e)}")
     elif message.reply_to_message:
         user_id = message.reply_to_message.from_user.id
         first_name = message.reply_to_message.from_user.first_name
     else:
-        await message.reply_text("ᴘʟᴇᴀꜱᴇ ꜱᴘᴇᴄɪꜰʏ ᴀ ᴠᴀʟɪᴅ ᴜꜱᴇʀ ᴏʀ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴀᴛ ᴜꜱᴇʀ'ꜱ ᴍᴇꜱꜱᴀɢᴇ")
-        return
+        return await message.reply_text("ᴘʟᴇᴀꜱᴇ ꜱᴘᴇᴄɪꜰʏ ᴀ ᴠᴀʟɪᴅ ᴜꜱᴇʀ ᴏʀ ʀᴇᴘʟʏ ᴛᴏ ᴛʜᴀᴛ ᴜꜱᴇʀ'ꜱ ᴍᴇꜱꜱᴀɢᴇ")
 
-    msg_text = await unban_user(user_id, first_name, admin_id, admin_name, chat_id)
-    await message.reply_text(msg_text)
+    try:
+        msg_text = await unban_user(user_id, first_name, admin_id, admin_name, chat_id)
+        await message.reply_text(msg_text)
+    except ChatAdminRequired:
+        await message.reply_text("ʏᴏᴜ ᴍᴜꜱᴛ ʜᴀᴠᴇ ᴀᴅᴍɪɴ ᴘᴇʀᴍɪꜱꜱɪᴏɴꜱ ᴛᴏ ᴜɴʙᴀɴ ᴜꜱᴇʀꜱ")
+    except UserNotParticipant:
+        await message.reply_text("ᴛʜᴇ ᴜꜱᴇʀ ɪs ɴᴏᴛ ᴘᴀʀᴛɪᴄɪᴘᴀɴᴛ ɪɴ ᴛʜɪs ᴄʜᴀᴛ")
+    except Exception as e:
+        await message.reply_text(f"Error: {str(e)}")
+
+# Ensure the unban_user function is implemented similarly to ban_user function
+async def unban_user(user_id, first_name, admin_id, admin_name, chat_id):
+    try:
+        await client.unban_chat_member(chat_id, user_id)
+        msg_text = f"User {first_name} has been unbanned by {admin_name}"
+        return msg_text
+    except Exception as e:
+        return f"Failed to unban user {first_name}. Error: {str(e)}"
 
 
 
