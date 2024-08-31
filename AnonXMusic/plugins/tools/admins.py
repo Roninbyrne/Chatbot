@@ -486,3 +486,116 @@ async def purge(c: Client, m: Message):
         await z.delete()
     else:
         await m.reply_text("Reply to a message to start purge!")
+
+
+# Function to check if the sender is an administrator
+async def is_administrator(user_id, message, client):
+    chat_member = await client.get_chat_member(message.chat.id, user_id)
+    return chat_member.status in ["administrator", "creator"]
+
+# Function to get the admin's current permissions
+async def get_admin_permissions(message, client):
+    chat_member = await client.get_chat_member(message.chat.id, message.from_user.id)
+    return chat_member.privileges
+
+@app.on_message(filters.command(["promote"], prefixes=["/", "!"]) & (filters.group | filters.channel))
+async def promote_user(client, message):
+    try:
+        if not await is_administrator(message.from_user.id, message, client):
+            await message.reply_text("You can't do that.")
+            return
+
+        if not await is_bot_administrator(message, client):
+            await message.reply_text("I need to be an administrator to perform this action.")
+            return
+
+        if message.reply_to_message:
+            user_id = message.reply_to_message.from_user.id
+        elif len(message.command) > 1:
+            user_id = int(message.command[1])
+        else:
+            await message.reply_text("Please specify a user to promote.")
+            return
+
+        # Define the permissions to grant
+        promote_permissions = ChatPermissions(
+            can_send_messages=True,
+            can_send_media_messages=True,
+            can_send_polls=True,
+            can_send_other_messages=True,
+            can_add_web_page_previews=True,
+            can_change_info=False,
+            can_invite_to_group=False,
+            can_pin_messages=False
+        )
+
+        # Get the admin's permissions
+        admin_permissions = await get_admin_permissions(message, client)
+
+        # Ensure the promoted user only gets permissions that the admin has
+        effective_permissions = ChatPermissions(
+            can_send_messages=promote_permissions.can_send_messages and admin_permissions.can_send_messages,
+            can_send_media_messages=promote_permissions.can_send_media_messages and admin_permissions.can_send_media_messages,
+            can_send_polls=promote_permissions.can_send_polls and admin_permissions.can_send_polls,
+            can_send_other_messages=promote_permissions.can_send_other_messages and admin_permissions.can_send_other_messages,
+            can_add_web_page_previews=promote_permissions.can_add_web_page_previews and admin_permissions.can_add_web_page_previews,
+            can_change_info=promote_permissions.can_change_info and admin_permissions.can_change_info,
+            can_invite_to_group=promote_permissions.can_invite_to_group and admin_permissions.can_invite_to_group,
+            can_pin_messages=promote_permissions.can_pin_messages and admin_permissions.can_pin_messages
+        )
+
+        await client.promote_chat_member(message.chat.id, user_id, permissions=effective_permissions)
+
+        user = await client.get_users(user_id)
+        admin_name = message.from_user.first_name
+        user_name = user.first_name
+
+        await message.reply_text(f"{user_name} has been promoted by {admin_name}.")
+
+    except Exception as e:
+        await message.reply_text(f"Failed to promote user due to {e}.")
+
+@app.on_message(filters.command(["fullpromote"], prefixes=["/", "!"]) & (filters.group | filters.channel))
+async def full_promote_user(client, message):
+    try:
+        if not await is_administrator(message.from_user.id, message, client):
+            await message.reply_text("You can't do that.")
+            return
+
+        if not await is_bot_administrator(message, client):
+            await message.reply_text("I need to be an administrator to perform this action.")
+            return
+
+        if message.reply_to_message:
+            user_id = message.reply_to_message.from_user.id
+        elif len(message.command) > 1:
+            user_id = int(message.command[1])
+        else:
+            await message.reply_text("Please specify a user to promote.")
+            return
+
+        # Get the admin's permissions
+        admin_permissions = await get_admin_permissions(message, client)
+
+        # Grant all permissions that the admin has
+        full_promote_permissions = ChatPermissions(
+            can_send_messages=admin_permissions.can_send_messages,
+            can_send_media_messages=admin_permissions.can_send_media_messages,
+            can_send_polls=admin_permissions.can_send_polls,
+            can_send_other_messages=admin_permissions.can_send_other_messages,
+            can_add_web_page_previews=admin_permissions.can_add_web_page_previews,
+            can_change_info=admin_permissions.can_change_info,
+            can_invite_to_group=admin_permissions.can_invite_to_group,
+            can_pin_messages=admin_permissions.can_pin_messages
+        )
+
+        await client.promote_chat_member(message.chat.id, user_id, permissions=full_promote_permissions)
+
+        user = await client.get_users(user_id)
+        admin_name = message.from_user.first_name
+        user_name = user.first_name
+
+        await message.reply_text(f"{user_name} has been fully promoted by {admin_name}.")
+
+    except Exception as e:
+        await message.reply_text(f"Failed to fully promote user due to {e}.")
