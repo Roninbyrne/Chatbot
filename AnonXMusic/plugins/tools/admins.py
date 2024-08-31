@@ -441,6 +441,10 @@ async def purge(_, ctx: Message):
         chat_id = ctx.chat.id
         user_id = ctx.from_user.id
         chat_member = await _.get_chat_member(chat_id, user_id)
+        
+        # Debug output to verify the user status
+        print(f"User status: {chat_member.status}")
+
         if chat_member.status not in ['administrator', 'creator']:
             error_msg = await ctx.reply("You must be an admin to use this command.")
             await asyncio.sleep(4)
