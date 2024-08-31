@@ -334,7 +334,12 @@ async def timed_mute_user(client, message):
 
             user_input = args[1]
             duration_input = args[2] if len(args) > 2 else '0s'
-            reason = args[3] if len(args) > 3 else None
+
+            # Extract duration and reason from args
+            if ' ' in duration_input:
+                duration_part, reason = duration_input.split(' ', 1)
+            else:
+                duration_part = duration_input
 
             if user_input.startswith('@'):
                 # Handle username
@@ -352,7 +357,7 @@ async def timed_mute_user(client, message):
                     return
 
             # Parse duration
-            duration_parts = duration_input.lower().strip()
+            duration_parts = duration_part.lower().strip()
             if duration_parts.endswith('s'):
                 duration = int(duration_parts[:-1])  # seconds
             elif duration_parts.endswith('m'):
@@ -396,7 +401,7 @@ async def timed_mute_user(client, message):
         reason_text = f" Reason: {reason}" if reason else ""
 
         # Send a notification about the mute
-        await message.reply_text(f"{user_name} has been muted by {admin_name}.{reason_text} Duration: {duration_input}")
+        await message.reply_text(f"{user_name} has been muted by {admin_name}.{reason_text} Duration: {duration_part}")
 
         # Wait for the specified duration and then unmute the user
         await asyncio.sleep(duration)
@@ -414,7 +419,7 @@ async def timed_mute_user(client, message):
                 can_pin_messages=True
             )
         )
-        await message.reply_text(f"{user_name} has been unmuted after {duration_input}.")
+        await message.reply_text(f"{user_name} has been unmuted after {duration_part}.")
 
     except FloodWait as e:
         await message.reply_text(f"Too many requests. Please try again later. (Wait {e.x} seconds)")
