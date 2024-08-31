@@ -23,7 +23,7 @@ async def is_administrator(user_id: int, message, client):
             return True
     return False
 
-@Client.on_message(filters.command(["ban"], prefixes=["/"]) & (filters.group | filters.channel))
+@app.on_message(filters.command(["ban"], prefixes=["/"]) & (filters.group | filters.channel))
 async def banuser(client, message):
     try:
         # Check if the message sender is an administrator
