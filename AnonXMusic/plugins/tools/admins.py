@@ -6,10 +6,9 @@ from pyrogram.types import (
     InlineKeyboardMarkup,
     ChatPermissions,
     ChatPrivileges,
-    Message,
-    ChatMemberStatus  # Use ChatMemberStatus for status checks
+    Message
 )
-from pyrogram.enums import ChatMembersFilter, ChatType
+from pyrogram.enums import ChatMembersFilter, ChatType, ChatMemberStatus  # Import ChatMemberStatus from pyrogram.enums
 from pyrogram.errors.exceptions.bad_request_400 import (
     ChatAdminRequired,
     UserAdminInvalid,
