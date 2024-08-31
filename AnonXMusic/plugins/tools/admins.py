@@ -425,3 +425,42 @@ async def timed_mute_user(client, message):
         await message.reply_text(f"Too many requests. Please try again later. (Wait {e.x} seconds)")
     except Exception as e:
         await message.reply_text(f"Failed to mute user due to {e}.")
+
+
+@app.on_message(filters.command(["purge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
+async def purge_messages(client, message):
+    try:
+        # Check if the message sender is an administrator
+        if not await is_administrator(message.from_user.id, message, client):
+            await message.reply_text("You can't do that.")
+            return
+
+        # Check if the bot itself is an administrator
+        if not await is_bot_administrator(message, client):
+            await message.reply_text("I need to be an administrator to perform this action.")
+            return
+
+        # Remove the command message itself
+        await message.delete()
+
+        # Determine starting message to purge
+        if message.reply_to_message:
+            start_message_id = message.reply_to_message.message_id
+        else:
+            await message.reply_text("Please reply to the message you want to start purging from.")
+            return
+
+        # Delete messages starting from the reply message
+        async for msg in client.get_chat_history(message.chat.id, from_message_id=start_message_id):
+            await client.delete_messages(message.chat.id, msg.message_id)
+
+        # Notify completion
+        completed_message = await message.reply_text("Purge completed.")
+        
+        # Delete the completion message after 4 seconds
+        await asyncio.sleep(4)
+        await completed_message.delete()
+
+    except Exception as e:
+        # Handle errors
+        await message.reply_text(f"Failed to purge messages due to {e}.")
