@@ -29,6 +29,7 @@ async def is_administrator(user_id: int, message, client):
 @app.on_message(filters.command(["ban"]))
 async def banuser(client: Client, message: Message):
     user_mention = None
+    user_id = None  # Initialize user_id here
     try:
         if not await is_administrator(message.from_user.id, message, client):
             msg = await message.reply_text("You can't do that")
@@ -52,6 +53,9 @@ async def banuser(client: Client, message: Message):
         msg = await message.reply_text(f"🚫 Banned {user_mention}.")
     
     except Exception as e:
+        # Provide a default user_mention if user_mention is not set
+        if user_mention is None:
+            user_mention = f"[{user_id}](tg://user?id={user_id})" if user_id else "the user"
         msg = await message.reply_text(f"Failed to ban {user_mention} due to {e}.")
     
     await asyncio.sleep(5)
