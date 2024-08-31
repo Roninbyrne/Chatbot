@@ -428,66 +428,47 @@ async def timed_mute_user(client, message):
 
 
 @app.on_message(filters.command(["purge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
-async def purge_messages(client: Client, message):
+async def purge(_, ctx: Message):
     try:
-        # Check if the message sender is an administrator
-        if not await is_administrator(message.from_user.id, message, client):
-            await message.reply_text("You can't do that.")
-            return
-
-        # Check if the bot itself is an administrator
-        if not await is_bot_administrator(message, client):
-            await message.reply_text("I need to be an administrator to perform this action.")
-            return
-
-        # Remove the command message itself
-        await message.delete()
-
-        repliedmsg = message.reply_to_message
-
-        if repliedmsg is None:
-            error_msg = await message.reply_text("Reply to the message you want to delete.")
-            await asyncio.sleep(2)
+        repliedmsg = ctx.reply_to_message
+        if not repliedmsg:
+            error_msg = await ctx.reply("Reply to the message you want to delete.")
+            await asyncio.sleep(4)
             await error_msg.delete()
             return
 
-        # Ensure repliedmsg has a valid message_id
-        if not hasattr(repliedmsg, 'message_id') or repliedmsg.message_id is None:
-            error_msg = await message.reply_text("Invalid message to delete.")
-            await asyncio.sleep(2)
+        # Check if the user is an admin
+        chat_id = ctx.chat.id
+        user_id = ctx.from_user.id
+        chat_member = await _.get_chat_member(chat_id, user_id)
+        if chat_member.status not in ['administrator', 'creator']:
+            error_msg = await ctx.reply("You must be an admin to use this command.")
+            await asyncio.sleep(4)
             await error_msg.delete()
             return
 
-        cmd = message.command
-        if len(cmd) > 1 and cmd[1].isdigit():
-            purge_to = repliedmsg.message_id + int(cmd[1])
-            purge_to = min(purge_to, message.message_id)
+        # Get command arguments
+        cmd_args = ctx.command[1:] if len(ctx.command) > 1 else []
+        if cmd_args and cmd_args[0].isdigit():
+            purge_to = repliedmsg.id + int(cmd_args[0])
+            purge_to = min(purge_to, ctx.message.id)
         else:
-            purge_to = message.message_id
+            purge_to = ctx.message.id
 
-        chat_id = message.chat.id
-        message_ids = []
+        message_ids = list(range(repliedmsg.id, purge_to + 1))
         del_total = 0
 
-        for message_id in range(repliedmsg.message_id, purge_to):
-            message_ids.append(message_id)
+        # Max message deletion limit is 100
+        for i in range(0, len(message_ids), 100):
+            chunk = message_ids[i:i + 100]
+            await _.delete_messages(chat_id=chat_id, message_ids=chunk, revoke=True)
+            del_total += len(chunk)
 
-            # Max message deletion limit is 100
-            if len(message_ids) == 100:
-                await client.delete_messages(chat_id, message_ids, revoke=True)
-                del_total += len(message_ids)
-                message_ids = []
-
-        # Delete any remaining messages
-        if len(message_ids) > 0:
-            await client.delete_messages(chat_id, message_ids, revoke=True)
-            del_total += len(message_ids)
-
-        completion_msg = await message.reply_text(f"Purge completed. {del_total} messages deleted.")
+        completion_msg = await ctx.reply("Purge completed.")
         await asyncio.sleep(4)
         await completion_msg.delete()
 
-    except Exception as e:
-        error_msg = await message.reply_text(f"ERROR: {e}")
+    except Exception as err:
+        error_msg = await ctx.reply(f"ERROR: {err}")
         await asyncio.sleep(5)
         await error_msg.delete()
