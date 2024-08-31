@@ -477,7 +477,7 @@ async def purge(_, ctx: Message):
         await asyncio.sleep(5)
         await error_msg.delete()
 
-@app.on_message(filters.command("spurge") & admin_filter)
+@app.on_message(filters.command(["spurge"], prefixes=["/", "!"]) & (filters.group | filters.channel))
 async def spurge(app: app, msg: Message):
 
     if msg.chat.type != ChatType.SUPERGROUP:
