@@ -17,6 +17,20 @@ from pyrogram.errors.exceptions.bad_request_400 import (
 from pyrogram.errors import UsernameNotOccupied, UserNotParticipant
 from AnonXMusic import app  # Importing the app object from your project
 
+async def is_administrator(user_id: int, message, client):
+    async for m in client.get_chat_members(message.chat.id, filter=ChatMembersFilter.ADMINISTRATORS):
+        if m.user.id == user_id:
+            return True
+    return False
+
+async def resolve_username_to_id(username: str, client):
+    try:
+        user = await client.get_users(username)
+        return user.id
+    except UsernameNotOccupied:
+        return None
+
+@app.on_message(filters.command(["ban"], prefixes=["/"]) & (filters.group | filters.channel))
 async def banuser(client, message):
     user_id = None  # Initialize user_id
     try:
