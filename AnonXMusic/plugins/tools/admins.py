@@ -443,25 +443,43 @@ async def purge_messages(client, message):
         # Remove the command message itself
         await message.delete()
 
-        # Determine starting message to purge
-        if message.reply_to_message:
-            start_message_id = message.reply_to_message.message_id
-        else:
-            await message.reply_text("Please reply to the message you want to start purging from.")
+        repliedmsg = message.reply_to_message
+        if not repliedmsg:
+            error_msg = await message.reply_text("Reply to the message you want to delete.")
+            await asyncio.sleep(2)
+            await error_msg.delete()
             return
 
-        # Delete messages starting from the reply message
-        async for msg in client.get_chat_history(message.chat.id, from_message_id=start_message_id):
-            if hasattr(msg, 'message_id'):  # Ensure 'msg' has 'message_id'
-                await client.delete_messages(message.chat.id, msg.message_id)
+        cmd = message.command
+        if len(cmd) > 1 and cmd[1].isdigit():
+            purge_to = repliedmsg.message_id + int(cmd[1])
+            purge_to = min(purge_to, message.message_id)
+        else:
+            purge_to = message.message_id
 
-        # Notify completion
-        completed_message = await message.reply_text("Purge completed.")
+        chat_id = message.chat.id
+        message_ids = []
+        del_total = 0
 
-        # Delete the completion message after 4 seconds
+        for message_id in range(repliedmsg.message_id, purge_to):
+            message_ids.append(message_id)
+
+            # Max message deletion limit is 100
+            if len(message_ids) == 100:
+                await client.delete_messages(chat_id, message_ids, revoke=True)
+                del_total += len(message_ids)
+                message_ids = []
+
+        # Delete if any messages left
+        if len(message_ids) > 0:
+            await client.delete_messages(chat_id, message_ids, revoke=True)
+            del_total += len(message_ids)
+
+        completion_msg = await message.reply_text(f"Purge completed. {del_total} messages deleted.")
         await asyncio.sleep(4)
-        await completed_message.delete()
+        await completion_msg.delete()
 
     except Exception as e:
-        # Handle errors
-        await message.reply_text(f"Failed to purge messages due to {e}.")
+        error_msg = await message.reply_text(f"ERROR: {e}")
+        await asyncio.sleep(5)
+        await error_msg.delete()
