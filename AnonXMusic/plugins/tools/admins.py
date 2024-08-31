@@ -23,6 +23,13 @@ async def is_administrator(user_id: int, message, client):
             return True
     return False
 
+async def is_bot_administrator(message, client):
+    bot_user_id = (await client.get_me()).id
+    async for m in client.get_chat_members(message.chat.id, filter=ChatMembersFilter.ADMINISTRATORS):
+        if m.user.id == bot_user_id:
+            return True
+    return False
+
 async def resolve_username_to_id(username: str, client):
     try:
         user = await client.get_users(username)
