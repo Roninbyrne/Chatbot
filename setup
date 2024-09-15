@@ -120,6 +120,7 @@ BOT_TOKEN = $bot_token
 MONGO_DB_URI = $mongo_db
 LOGGER_ID = $logger
 STRING_SESSION = $string_session
+SUPERBAN_SESSION = $superban_session
 OWNER_ID = $ownid""" > .env
 clear
 
