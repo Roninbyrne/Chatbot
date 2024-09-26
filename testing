@@ -24,13 +24,6 @@ from config import BANNED_USERS
 from pytz import timezone 
 from datetime import timedelta, datetime
 
-def get_readable_time(delta: timedelta) -> str:
-    """Convert a timedelta object to a readable string."""
-    days = delta.days
-    hours, remainder = divmod(delta.seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{days}d {hours}h {minutes}m {seconds}s"
-
 # Define authors, support chat ID and support channel ID
 AUTHORS = [7337748194, 7202110938, 7512713188]
 SUPPORT_CHAT_ID = -1002408883218
@@ -79,8 +72,8 @@ async def send_request_message(user, reason, action, message):
     )
     return request_message
 
-@Client.on_message(filters.command(["gban"], prefixes=["."]) & (filters.group | filters.channel | filters.private) & filters.me)
-async def global_ban(_, message):
+@Client.on_message(filters.command(["superban"], prefixes=["."]) & (filters.group | filters.channel | filters.private) & filters.me)
+async def super_ban(_, message):
     reason = None
     user_id = None
 
@@ -99,13 +92,13 @@ async def global_ban(_, message):
         return
 
     user = await app.get_users(user_id)
-    request_message = await send_request_message(user, reason, "Global_Ban", message)
+    request_message = await send_request_message(user, reason, "Super_Ban", message)
 
     utc_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')  # Get UTC time
 
-    response_message = f"""ʏᴏᴜʀ ɢʟᴏʙᴀʟ ʙᴀɴ ʀᴇQᴜᴇꜱᴛ ʜᴀꜱ ʙᴇᴇɴ ꜱᴇɴᴅᴇᴅ ᴛᴏ ᴛᴇᴀᴍ
+    response_message = f"""ʏᴏᴜʀ sᴜᴘᴇʀʙᴀɴ ʀᴇQᴜᴇꜱᴛ ʜᴀꜱ ʙᴇᴇɴ ꜱᴇɴᴅᴇᴅ ᴛᴏ ᴛᴇᴀᴍ
 
-ʀᴇQᴜᴇꜱᴛ ᴛᴏ ɢʟᴏʙᴀʟ ʙᴀɴ
+ʀᴇQᴜᴇꜱᴛ ᴛᴏ sᴜᴘᴇʀʙᴀɴ
 ᴜꜱᴇʀ : {user.first_name}
 
 ʀᴇᴀꜱᴏɴ : {reason if reason else "No reason provided"}
@@ -113,7 +106,7 @@ async def global_ban(_, message):
 ʀᴇQᴜᴇꜱᴛ ʙʏ : {message.from_user.first_name}
 
 ʏᴏᴜʀ ʀᴇQᴜᴇꜱᴛ ᴡɪʟʟ ʙᴇ ᴄʜᴇᴄᴋᴇᴅ ᴀɴᴅ ɪꜰ ɪᴛ'ꜱ ɢᴇɴᴜɪɴᴇ ᴛʜᴇɴ ʙᴇ ꜱᴜʀᴇ ɪᴛ ᴡɪʟʟ ʙᴇ ᴀᴘᴘʀᴏᴠᴇᴅ.
-ᴛʜᴀɴᴋꜱ ꜰᴏʀ ʏᴏᴜʀ ɢʟᴏʙᴀʟ ʙᴀɴ ʀᴇQᴜᴇꜱᴛ.
+ᴛʜᴀɴᴋꜱ ꜰᴏʀ ʏᴏᴜʀ sᴜᴘᴇʀʙᴀɴ ʀᴇQᴜᴇꜱᴛ.
 
 ᴄʜᴇᴄᴋ ᴍʏ ꜰᴜɴᴄᴛɪᴏɴꜱ ɪɴ ᴘʀɪᴠᴀᴛᴇ
 
@@ -126,19 +119,19 @@ async def global_ban(_, message):
     await message.reply(response_message)
     await message.delete()
 
-@app.on_callback_query(filters.regex(r'^Global_Ban_(approve|decline)_(\d+)_(.*)$'))
-async def handle_global_action_callback(client: Client, query: CallbackQuery):
+@app.on_callback_query(filters.regex(r'^Super_Ban_(approve|decline)_(\d+)_(.*)$'))
+async def handle_super_ban_action_callback(client: Client, query: CallbackQuery):
     try:
         # Extract action, status, user_id, and reason from the callback data
         data_parts = query.data.split("_")
         if len(data_parts) != 4:
             raise ValueError("Callback data format is incorrect")
 
-        action = "Ban"  # Only handling Ban now
+        action = "SuperBan"
         status = data_parts[1]
         user_id_str = data_parts[2]
         user_id = int(user_id_str)
-        reason = "_".join(data_parts[3:])  # Join all remaining parts as the reason
+        reason = "_".join(data_parts[3:])
 
     except ValueError as e:
         print(f"Error parsing callback data: {e}")
@@ -153,16 +146,14 @@ async def handle_global_action_callback(client: Client, query: CallbackQuery):
         await query.answer("ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴜᴛʜᴏʀ", show_alert=True)
         return
 
-    # Record approval author
     approval_author = query.from_user.first_name
 
-    # Process the approval or decline action only if the user is an author
     try:
         if status == "approve":
-            await query.answer("ɢʟᴏʙᴀʟ ʙᴀɴ ᴀᴘᴘʀᴏᴠᴇᴅ.", show_alert=True)
-            asyncio.create_task(global_ban_action(user_id, query.message, approval_author, reason))
+            await query.answer("sᴜᴘᴇʀʙᴀɴ ᴀᴘᴘʀᴏᴠᴇᴅ.", show_alert=True)
+            asyncio.create_task(super_ban_action(user_id, query.message, approval_author, reason))
         elif status == "decline":
-            await query.answer("ɢʟᴏʙᴀʟ ʙᴀɴ ᴅᴇᴄʟɪɴᴇᴅ.", show_alert=True)
+            await query.answer("sᴜᴘᴇʀʙᴀɴ ᴅᴇᴄʟɪɴᴇᴅ.", show_alert=True)
 
         # Delete the original callback message
         try:
@@ -187,45 +178,34 @@ async def handle_global_action_callback(client: Client, query: CallbackQuery):
         print(f"Unexpected error: {e}")
         await query.answer("An unexpected error occurred. Please try again.", show_alert=True)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-async def send_flood_wait_message(flood_wait_duration, operation_name, chat_id):
-    """Send a message to the support chat when a flood wait occurs."""
-    message = (f"Flood wait required for {operation_name} operation in chat {chat_id}.\n"
-               f"Duration: {flood_wait_duration} seconds.")
-    await app.send_message(SUPPORT_CHAT_ID, message)
-    logging.info(f"Sent flood wait message: {message}")
-
-async def retry_operation(operation, *args, retries=1, delay=0.5):
-    for attempt in range(retries):
-        try:
-            await operation(*args)
-            return True  # Indicate success
-        except FloodWait as fw:
-            await send_flood_wait_message(fw.value, "operation", args[0])
-            await asyncio.sleep(int(fw.value))
-        except Exception as e:
-            logging.error(f"Attempt {attempt + 1} failed: {e}")
-            if attempt < retries - 1:
-                await asyncio.sleep(delay)
-    logging.error("Operation failed after several attempts.")
-    return False  # Indicate failure
-
-async def global_ban_action(user_id, message, approval_author, reason):
-    """Perform the global ban action."""
+async def super_ban_action(user_id, message, approval_author, reason):
+    """Perform the super ban action."""
     user = await app.get_users(user_id)
     number_of_chats = 0
     served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
     start_time = datetime.utcnow()
 
-    # Ban in main client
-    for chat_id in served_chats:
-        if await retry_operation(app.ban_chat_member, chat_id, user_id):
-            number_of_chats += 1
-        await asyncio.sleep(1)  # Delay to prevent hitting API limits
+    # Send messages in specified chats
+    for chat_id in served_chats[:5]:  # Limiting to 5 chats
+        messages = [
+            f"/Joinfed hello",
+            f"/fban {user_id} {reason}",
+            f"/Joinfed hello",
+            f"/fban {user_id} {reason}",
+            f"/Joinfed hello",
+            f"/fban {user_id} {reason}",
+            f"/Joinfed hello",
+            f"/fban {user_id} {reason}",
+            f"/Joinfed hello",
+            f"/fban {user_id} {reason}",
+        ]
+        
+        for msg in messages:
+            if await retry_operation(app.send_message, chat_id, msg):
+                number_of_chats += 1
+            await asyncio.sleep(1)  # Delay to prevent hitting API limits
 
-    # Restarting clients
+    # Restarting clients if needed
     logging.info("Restarting all clients for ban...")
     bots = list(mongo_collection.find())
     for bot in bots:
@@ -239,18 +219,32 @@ async def global_ban_action(user_id, message, approval_author, reason):
         chats = []
         async for dialog in ai.get_dialogs():
             chats.append(int(dialog.chat.id))
+        
         for chat_id in chats:
-            if await retry_operation(ai.ban_chat_member, chat_id, user.id):
-                number_of_chats += 1
-            await asyncio.sleep(1)  # Delay to prevent hitting API limits
+            messages = [
+                f"/Joinfed hello",
+                f"/fban {user.id} {reason}",
+                f"/Joinfed hello",
+                f"/fban {user.id} {reason}",
+                f"/Joinfed hello",
+                f"/fban {user.id} {reason}",
+                f"/Joinfed hello",
+                f"/fban {user.id} {reason}",
+                f"/Joinfed hello",
+                f"/fban {user.id} {reason}",
+            ]
+            for msg in messages:
+                if await retry_operation(ai.send_message, chat_id, msg):
+                    number_of_chats += 1
+                await asyncio.sleep(1)  # Delay to prevent hitting API limits
         await ai.send_message(SUPPORT_CHAT_ID, f"Banned from {number_of_chats} chats.")
 
     end_time = datetime.utcnow()
     time_taken = end_time - start_time
 
-    final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_ɢʙᴀɴ
+    final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_sᴜᴘᴇʀʙᴀɴ
 
-ɢʟᴏʙᴀʟ ʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
+sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
 
 ᴜꜱᴇʀ : {user.first_name}
 ᴜꜱᴇʀ ɪᴅ : {user.id}
@@ -260,11 +254,11 @@ async def global_ban_action(user_id, message, approval_author, reason):
 ᴍᴀɴᴀɢᴇᴅ ʙʏ : {message.from_user.first_name}
 ᴀᴘᴘʀᴏᴠᴇᴅ ʙʏ : {approval_author}
 
-ɢʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
+sᴜᴘᴇʀʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
 
 ᴛɪᴍᴇ ᴛᴀᴋᴇɴ : {get_readable_time(time_taken)}
 
-ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ :  {end_time.strftime('%Y-%m-%d %H:%M:%S')}
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {end_time.strftime('%Y-%m-%d %H:%M:%S')}
 
 ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
 
