@@ -1,0 +1,274 @@
+from pyrogram import Client, filters
+from ComboBot import app 
+import asyncio
+import logging
+from ComboBot.plugins.bot.clone import logging, mongo_collection
+from config import API_ID, API_HASH
+from pymongo import MongoClient
+from pyrogram.errors import FloodWait
+from pyrogram.errors.exceptions.flood_420 import FloodWait
+from pyrogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
+from ComboBot.misc import SUDOERS
+from ComboBot.utils import get_readable_time
+from ComboBot.utils.database import (
+    add_banned_user,
+    get_banned_count,
+    get_banned_users,
+    get_served_chats,
+    is_banned_user,
+    remove_banned_user,
+)
+from ComboBot.utils.decorators.language import language
+from ComboBot.utils.extraction import extract_user
+from config import BANNED_USERS
+from pytz import timezone 
+from datetime import timedelta, datetime
+
+def get_readable_time(delta: timedelta) -> str:
+    """Convert a timedelta object to a readable string."""
+    days = delta.days
+    hours, remainder = divmod(delta.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{days}d {hours}h {minutes}m {seconds}s"
+
+# Define authors, support chat ID and support channel ID
+AUTHORS = [7337748194, 7202110938, 7512713188]
+SUPPORT_CHAT_ID = -1002408883218
+SUPPORT_CHANNEL_ID = -1002059806687
+
+async def get_user_id(query):
+    """Get user ID from username or directly if it's a numeric user ID."""
+    if query.isnumeric():
+        return int(query)
+    try:
+        user = await app.get_users(query)
+        return user.id
+    except Exception as e:
+        print(f"Error fetching user: {e}")
+        return None
+
+async def send_request_message(user, reason, action, message):
+    """Send a request message to the support chat for approval."""
+    chat_name = message.chat.title if message.chat.title else "Private Chat"
+    chat_id = message.chat.id
+    ind_time = datetime.now(timezone("Asia/Kolkata")).strftime('%Y-%m-%d %H:%M:%S')
+    utc_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')  # Get UTC time
+
+    request_message = await app.send_message(
+        SUPPORT_CHAT_ID,
+        f"""ᴀᴘᴘʀᴏᴠᴇ {action} ꜰᴏʀ ᴜꜱᴇʀ :
+{user.first_name}
+ᴜꜱᴇʀ ɪᴅ : {user.id}
+
+ʀᴇQᴜᴇꜱᴛ ꜰʀᴏᴍ ᴄʜᴀᴛ ɪᴅ : {chat_id}
+ʀᴇQᴜᴇꜱᴛ ꜰʀᴏᴍ ᴄʜᴀᴛ ɴᴀᴍᴇ : {chat_name}
+
+ʀᴇᴀꜱᴏɴ : {reason if reason else "No reason provided"}
+
+ʀᴇQᴜᴇꜱᴛ ʙʏ : {message.from_user.first_name}
+
+ᴅᴀᴛᴇ & ᴛɪᴍᴇ : {ind_time}
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {utc_time}
+
+ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot
+        """,
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("✯ ᴀᴘᴘʀᴏᴠᴇ ✯", callback_data=f"{action}_approve_{user.id}_{reason}")],
+            [InlineKeyboardButton("✯ ᴅᴇᴄʟɪɴᴇ ✯", callback_data=f"{action}_decline_{user.id}_{reason}")]
+        ])
+    )
+    return request_message
+
+@Client.on_message(filters.command(["gban"], prefixes=["."]) & (filters.group | filters.channel | filters.private) & filters.me)
+async def global_ban(_, message):
+    reason = None
+    user_id = None
+
+    if message.reply_to_message:
+        user_id = message.reply_to_message.from_user.id
+        reason = message.reply_to_message.text
+    else:
+        msg_parts = message.text.split(None, 1)
+        if len(msg_parts) > 1:
+            user_query = msg_parts[1].split()[0]
+            user_id = await get_user_id(user_query)
+            reason = " ".join(msg_parts[1].split()[1:]) if len(msg_parts[1].split()) > 1 else None
+
+    if user_id is None:
+        await message.reply("Please specify a user ID, username, or reply to a message.")
+        return
+
+    user = await app.get_users(user_id)
+    request_message = await send_request_message(user, reason, "Global_Ban", message)
+
+    utc_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')  # Get UTC time
+
+    response_message = f"""ʏᴏᴜʀ ɢʟᴏʙᴀʟ ʙᴀɴ ʀᴇQᴜᴇꜱᴛ ʜᴀꜱ ʙᴇᴇɴ ꜱᴇɴᴅᴇᴅ ᴛᴏ ᴛᴇᴀᴍ
+
+ʀᴇQᴜᴇꜱᴛ ᴛᴏ ɢʟᴏʙᴀʟ ʙᴀɴ
+ᴜꜱᴇʀ : {user.first_name}
+
+ʀᴇᴀꜱᴏɴ : {reason if reason else "No reason provided"}
+
+ʀᴇQᴜᴇꜱᴛ ʙʏ : {message.from_user.first_name}
+
+ʏᴏᴜʀ ʀᴇQᴜᴇꜱᴛ ᴡɪʟʟ ʙᴇ ᴄʜᴇᴄᴋᴇᴅ ᴀɴᴅ ɪꜰ ɪᴛ'ꜱ ɢᴇɴᴜɪɴᴇ ᴛʜᴇɴ ʙᴇ ꜱᴜʀᴇ ɪᴛ ᴡɪʟʟ ʙᴇ ᴀᴘᴘʀᴏᴠᴇᴅ.
+ᴛʜᴀɴᴋꜱ ꜰᴏʀ ʏᴏᴜʀ ɢʟᴏʙᴀʟ ʙᴀɴ ʀᴇQᴜᴇꜱᴛ.
+
+ᴄʜᴇᴄᴋ ᴍʏ ꜰᴜɴᴄᴛɪᴏɴꜱ ɪɴ ᴘʀɪᴠᴀᴛᴇ
+
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {utc_time}
+
+ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
+
+ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
+
+    await message.reply(response_message)
+    await message.delete()
+
+@app.on_callback_query(filters.regex(r'^Global_Ban_(approve|decline)_(\d+)_(.*)$'))
+async def handle_global_action_callback(client: Client, query: CallbackQuery):
+    try:
+        # Extract action, status, user_id, and reason from the callback data
+        data_parts = query.data.split("_")
+        if len(data_parts) != 4:
+            raise ValueError("Callback data format is incorrect")
+
+        action = "Ban"  # Only handling Ban now
+        status = data_parts[1]
+        user_id_str = data_parts[2]
+        user_id = int(user_id_str)
+        reason = "_".join(data_parts[3:])  # Join all remaining parts as the reason
+
+    except ValueError as e:
+        print(f"Error parsing callback data: {e}")
+        await query.answer("Failed to process request. Please try again.", show_alert=True)
+        try:
+            await query.message.delete()
+        except Exception as e:
+            print(f"Failed to delete message: {e}")
+        return
+
+    if query.from_user.id not in AUTHORS:
+        await query.answer("ʏᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴀɴ ᴀᴜᴛʜᴏʀ", show_alert=True)
+        return
+
+    # Record approval author
+    approval_author = query.from_user.first_name
+
+    # Process the approval or decline action only if the user is an author
+    try:
+        if status == "approve":
+            await query.answer("ɢʟᴏʙᴀʟ ʙᴀɴ ᴀᴘᴘʀᴏᴠᴇᴅ.", show_alert=True)
+            asyncio.create_task(global_ban_action(user_id, query.message, approval_author, reason))
+        elif status == "decline":
+            await query.answer("ɢʟᴏʙᴀʟ ʙᴀɴ ᴅᴇᴄʟɪɴᴇᴅ.", show_alert=True)
+
+        # Delete the original callback message
+        try:
+            await query.message.delete()
+        except Exception as e:
+            print(f"Failed to delete message: {e}")
+
+        # Send notification about the action taken
+        notification_message = await app.send_message(
+            SUPPORT_CHAT_ID,
+            f"{action} ʀᴇQᴜᴇꜱᴛ {status} ʙʏ {approval_author}.",
+        )
+
+        # Delete the notification message after 15 seconds
+        await asyncio.sleep(15)
+        try:
+            await notification_message.delete()
+        except Exception as e:
+            print(f"Failed to delete notification message: {e}")
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        await query.answer("An unexpected error occurred. Please try again.", show_alert=True)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+async def send_flood_wait_message(flood_wait_duration, operation_name, chat_id):
+    """Send a message to the support chat when a flood wait occurs."""
+    message = (f"Flood wait required for {operation_name} operation in chat {chat_id}.\n"
+               f"Duration: {flood_wait_duration} seconds.")
+    await app.send_message(SUPPORT_CHAT_ID, message)
+    logging.info(f"Sent flood wait message: {message}")
+
+async def retry_operation(operation, *args, retries=1, delay=0.5):
+    for attempt in range(retries):
+        try:
+            await operation(*args)
+            return True  # Indicate success
+        except FloodWait as fw:
+            await send_flood_wait_message(fw.value, "operation", args[0])
+            await asyncio.sleep(int(fw.value))
+        except Exception as e:
+            logging.error(f"Attempt {attempt + 1} failed: {e}")
+            if attempt < retries - 1:
+                await asyncio.sleep(delay)
+    logging.error("Operation failed after several attempts.")
+    return False  # Indicate failure
+
+async def global_ban_action(user_id, message, approval_author, reason):
+    """Perform the global ban action."""
+    user = await app.get_users(user_id)
+    number_of_chats = 0
+    served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
+    start_time = datetime.utcnow()
+
+    # Ban in main client
+    for chat_id in served_chats:
+        if await retry_operation(app.ban_chat_member, chat_id, user_id):
+            number_of_chats += 1
+        await asyncio.sleep(1)  # Delay to prevent hitting API limits
+
+    # Restarting clients
+    logging.info("Restarting all clients for ban...")
+    bots = list(mongo_collection.find())
+    for bot in bots:
+        string_token = bot['string']
+        ai = Client(
+            f"{string_token}", API_ID, API_HASH,
+            session_string=string_token,
+            plugins={"root": "ComboBot.plugins.userbot"},
+        )
+        await ai.start()
+        chats = []
+        async for dialog in ai.get_dialogs():
+            chats.append(int(dialog.chat.id))
+        for chat_id in chats:
+            if await retry_operation(ai.ban_chat_member, chat_id, user.id):
+                number_of_chats += 1
+            await asyncio.sleep(1)  # Delay to prevent hitting API limits
+        await ai.send_message(SUPPORT_CHAT_ID, f"Banned from {number_of_chats} chats.")
+
+    end_time = datetime.utcnow()
+    time_taken = end_time - start_time
+
+    final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_ɢʙᴀɴ
+
+ɢʟᴏʙᴀʟ ʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
+
+ᴜꜱᴇʀ : {user.first_name}
+ᴜꜱᴇʀ ɪᴅ : {user.id}
+
+ʀᴇᴀꜱᴏɴ : {reason}
+
+ᴍᴀɴᴀɢᴇᴅ ʙʏ : {message.from_user.first_name}
+ᴀᴘᴘʀᴏᴠᴇᴅ ʙʏ : {approval_author}
+
+ɢʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
+
+ᴛɪᴍᴇ ᴛᴀᴋᴇɴ : {get_readable_time(time_taken)}
+
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ :  {end_time.strftime('%Y-%m-%d %H:%M:%S')}
+
+ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
+
+ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
+
+    await app.send_message(SUPPORT_CHANNEL_ID, final_message)
+    await add_banned_user(user.id)
