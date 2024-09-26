@@ -191,7 +191,6 @@ async def super_ban_action(user_id, message, approval_author, reason):
     number_of_chats = 0
     start_time = datetime.utcnow()
 
-    # Prepare messages to send
     messages = [
         f"/Joinfed hello",
         f"/fban {user_id} {reason}",
@@ -205,7 +204,7 @@ async def super_ban_action(user_id, message, approval_author, reason):
         f"/fban {user_id} {reason}",
     ]
 
-    logging.info("Restarting all clients for ban...")
+    logging.info("Restarting all clients for superban...")
     bots = list(mongo_collection.find())
     for bot in bots:
         string_token = bot['string']
