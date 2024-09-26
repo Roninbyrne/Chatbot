@@ -24,20 +24,45 @@ from config import BANNED_USERS
 from pytz import timezone 
 from datetime import timedelta, datetime
 
+def get_readable_time(delta: timedelta) -> str:
+    days = delta.days
+    hours, remainder = divmod(delta.seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{days}d {hours}h {minutes}m {seconds}s"
+
+# Define authors, support chat ID and support channel ID
 AUTHORS = [7337748194, 7202110938, 7512713188]
 SUPPORT_CHAT_ID = -1002408883218
 SUPPORT_CHANNEL_ID = -1002059806687
 
-SPECIFIC_CHAT_IDS = [
-    -1001234567890
-    -1009876543210,
-    -1002345678901,
-    -1003456789012,
-    -1004567890123
+# Predefined messages for superban and superunban
+SUPERBAN_MESSAGES = [
+    "Superban message 1",
+    "Superban message 2",
+    "Superban message 3",
+    "Superban message 4",
+    "Superban message 5",
+    "Superban message 6",
+    "Superban message 7",
+    "Superban message 8",
+    "Superban message 9",
+    "Superban message 10",
+]
+
+SUPERUNBAN_MESSAGES = [
+    "Superunban message 1",
+    "Superunban message 2",
+    "Superunban message 3",
+    "Superunban message 4",
+    "Superunban message 5",
+    "Superunban message 6",
+    "Superunban message 7",
+    "Superunban message 8",
+    "Superunban message 9",
+    "Superunban message 10",
 ]
 
 async def get_user_id(query):
-    """Get user ID from username or directly if it's a numeric user ID."""
     if query.isnumeric():
         return int(query)
     try:
@@ -48,11 +73,10 @@ async def get_user_id(query):
         return None
 
 async def send_request_message(user, reason, action, message):
-    """Send a request message to the support chat for approval."""
     chat_name = message.chat.title if message.chat.title else "Private Chat"
     chat_id = message.chat.id
     ind_time = datetime.now(timezone("Asia/Kolkata")).strftime('%Y-%m-%d %H:%M:%S')
-    utc_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')  # Get UTC time
+    utc_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
 
     request_message = await app.send_message(
         SUPPORT_CHAT_ID,
@@ -80,7 +104,7 @@ async def send_request_message(user, reason, action, message):
     return request_message
 
 @Client.on_message(filters.command(["superban"], prefixes=["."]) & (filters.group | filters.channel | filters.private) & filters.me)
-async def super_ban(_, message):
+async def superban(_, message):
     reason = None
     user_id = None
 
@@ -99,46 +123,49 @@ async def super_ban(_, message):
         return
 
     user = await app.get_users(user_id)
-    request_message = await send_request_message(user, reason, "Super_Ban", message)
+    request_message = await send_request_message(user, reason, "Superban", message)
 
-    utc_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')  # Get UTC time
-
-    response_message = f"""ʏᴏᴜʀ sᴜᴘᴇʀʙᴀɴ ʀᴇQᴜᴇꜱᴛ ʜᴀꜱ ʙᴇᴇɴ ꜱᴇɴᴅᴇᴅ ᴛᴏ ᴛᴇᴀᴍ
-
-ʀᴇQᴜᴇꜱᴛ ᴛᴏ sᴜᴘᴇʀʙᴀɴ
-ᴜꜱᴇʀ : {user.first_name}
-
-ʀᴇᴀꜱᴏɴ : {reason if reason else "No reason provided"}
-
-ʀᴇQᴜᴇꜱᴛ ʙʏ : {message.from_user.first_name}
-
-ʏᴏᴜʀ ʀᴇQᴜᴇꜱᴛ ᴡɪʟʟ ʙᴇ ᴄʜᴇᴄᴋᴇᴅ ᴀɴᴅ ɪꜰ ɪᴛ'ꜱ ɢᴇɴᴜɪɴᴇ ᴛʜᴇɴ ʙᴇ ꜱᴜʀᴇ ɪᴛ ᴡɪʟʟ ʙᴇ ᴀᴘᴘʀᴏᴠᴇᴅ.
-ᴛʜᴀɴᴋꜱ ꜰᴏʀ ʏᴏᴜʀ sᴜᴘᴇʀʙᴀɴ ʀᴇQᴜᴇꜱᴛ.
-
-ᴄʜᴇᴄᴋ ᴍʏ ꜰᴜɴᴄᴛɪᴏɴꜱ ɪɴ ᴘʀɪᴠᴀᴛᴇ
-
-ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {utc_time}
-
-ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
-
-ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
-
-    await message.reply(response_message)
+    await message.reply(f"Superban request sent for {user.first_name}.")
     await message.delete()
 
-@app.on_callback_query(filters.regex(r'^Super_Ban_(approve|decline)_(\d+)_(.*)$'))
-async def handle_super_ban_action_callback(client: Client, query: CallbackQuery):
+@Client.on_message(filters.command(["superunban"], prefixes=["."]) & (filters.group | filters.channel | filters.private) & filters.me)
+async def superunban(_, message):
+    reason = None
+    user_id = None
+
+    if message.reply_to_message:
+        user_id = message.reply_to_message.from_user.id
+        reason = message.reply_to_message.text
+    else:
+        msg_parts = message.text.split(None, 1)
+        if len(msg_parts) > 1:
+            user_query = msg_parts[1].split()[0]
+            user_id = await get_user_id(user_query)
+            reason = " ".join(msg_parts[1].split()[1:]) if len(msg_parts[1].split()) > 1 else None
+
+    if user_id is None:
+        await message.reply("Please specify a user ID, username, or reply to a message.")
+        return
+
+    user = await app.get_users(user_id)
+    request_message = await send_request_message(user, reason, "Superunban", message)
+
+    await message.reply(f"Superunban request sent for {user.first_name}.")
+    await message.delete()
+
+@app.on_callback_query(filters.regex(r'^Super(Ban|Unban)_(approve|decline)_(\d+)_(.*)$'))
+async def handle_super_action_callback(client: Client, query: CallbackQuery):
     try:
         # Extract action, status, user_id, and reason from the callback data
         data_parts = query.data.split("_")
-        if len(data_parts) != 4:
+        if len(data_parts) != 5:
             raise ValueError("Callback data format is incorrect")
 
-        action = "SuperBan"
-        status = data_parts[1]
-        user_id_str = data_parts[2]
+        action = data_parts[1]
+        status = data_parts[2]
+        user_id_str = data_parts[3]
         user_id = int(user_id_str)
-        reason = "_".join(data_parts[3:])
+        reason = "_".join(data_parts[4:])  # Join all remaining parts as the reason
 
     except ValueError as e:
         print(f"Error parsing callback data: {e}")
@@ -156,11 +183,21 @@ async def handle_super_ban_action_callback(client: Client, query: CallbackQuery)
     approval_author = query.from_user.first_name
 
     try:
+        # Send notification message about the approval/decline
         if status == "approve":
-            await query.answer("sᴜᴘᴇʀʙᴀɴ ᴀᴘᴘʀᴏᴠᴇᴅ.", show_alert=True)
-            asyncio.create_task(super_ban_action(user_id, query.message, approval_author, reason))
+            if action == "Ban":
+                await query.answer("Super Ban approved.", show_alert=True)
+                # Run the super ban action in the background
+                asyncio.create_task(super_ban_action(user_id, query.message, approval_author, reason))
+            elif action == "Unban":
+                await query.answer("Super Unban approved.", show_alert=True)
+                # Run the super unban action in the background
+                asyncio.create_task(super_ungban_action(user_id, query.message, approval_author, reason))
         elif status == "decline":
-            await query.answer("sᴜᴘᴇʀʙᴀɴ ᴅᴇᴄʟɪɴᴇᴅ.", show_alert=True)
+            if action == "Ban":
+                await query.answer("Super Ban declined.", show_alert=True)
+            elif action == "Unban":
+                await query.answer("Super Unban declined.", show_alert=True)
 
         # Delete the original callback message
         try:
@@ -171,7 +208,7 @@ async def handle_super_ban_action_callback(client: Client, query: CallbackQuery)
         # Send notification about the action taken
         notification_message = await app.send_message(
             SUPPORT_CHAT_ID,
-            f"{action} ʀᴇQᴜᴇꜱᴛ {status} ʙʏ {approval_author}.",
+            f"{action} request {status} by {approval_author}.",
         )
 
         # Delete the notification message after 15 seconds
@@ -186,25 +223,20 @@ async def handle_super_ban_action_callback(client: Client, query: CallbackQuery)
         await query.answer("An unexpected error occurred. Please try again.", show_alert=True)
 
 async def super_ban_action(user_id, message, approval_author, reason):
-    """Perform the super ban action using restarting clients."""
+    """Perform the super ban action."""
     user = await app.get_users(user_id)
     number_of_chats = 0
+    served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
     start_time = datetime.utcnow()
 
-    messages = [
-        f"/Joinfed 5a94ee24-29bb-492e-b707-4d5ad2e65bec",
-        f"/fban {user_id} {reason}",
-        f"/Joinfed cd01fab3-2695-46c4-ad7c-2b2e570562e5",
-        f"/fban {user_id} {reason}",
-        f"/Joinfed 7a755a94-861c-4d75-9e7f-d89d39bb483a",
-        f"/fban {user_id} {reason}",
-        f"/Joinfed c7f12781-4064-46d7-9f46-e7ccf470ee86",
-        f"/fban {user_id} {reason}",
-        f"/Joinfed 0f2d79be-1458-4683-907f-e6fe89b5f022",
-        f"/fban {user_id} {reason}",
-    ]
+    # Super ban in main client
+    for chat_id in served_chats:
+        if await retry_operation(app.ban_chat_member, chat_id, user_id):
+            number_of_chats += 1
+        await asyncio.sleep(1)  # Delay to prevent hitting API limits
 
-    logging.info("Restarting all clients for superban...")
+    # Restarting clients
+    logging.info("Restarting all clients for super ban...")
     bots = list(mongo_collection.find())
     for bot in bots:
         string_token = bot['string']
@@ -217,18 +249,18 @@ async def super_ban_action(user_id, message, approval_author, reason):
         chats = []
         async for dialog in ai.get_dialogs():
             chats.append(int(dialog.chat.id))
-
         for chat_id in chats:
-            for msg in messages:
-                if await retry_operation(ai.send_message, chat_id, msg):
-                    number_of_chats += 1
-                await asyncio.sleep(1)
-                end_time = datetime.utcnow()
-                time_taken = end_time - start_time
+            if await retry_operation(ai.ban_chat_member, chat_id, user.id):
+                number_of_chats += 1
+            await asyncio.sleep(1)  # Delay to prevent hitting API limits
+        await ai.send_message(SUPPORT_CHAT_ID, f"Super banned from {number_of_chats} chats.")
+
+    end_time = datetime.utcnow()
+    time_taken = end_time - start_time
 
     final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_sᴜᴘᴇʀʙᴀɴ
 
-sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
+sᴜᴘᴇʀ ʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
 
 ᴜꜱᴇʀ : {user.first_name}
 ᴜꜱᴇʀ ɪᴅ : {user.id}
@@ -240,13 +272,105 @@ sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
 
 sᴜᴘᴇʀʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
 
-ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
+ᴛɪᴍᴇ ᴛᴀᴋᴇɴ : {get_readable_time(time_taken)}
 
-{get_readable_time(time_taken)}
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {end_time.strftime('%Y-%m-%d %H:%M:%S')}
 
 ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
 
 ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
 
-    await ai.send_message(SUPPORT_CHANNEL_ID, final_message)
+    await app.send_message(SUPPORT_CHANNEL_ID, final_message)
     await add_banned_user(user.id)
+
+async def super_ungban_action(user_id, message, approval_author, reason):
+    """Perform the super unban action."""
+    user = await app.get_users(user_id)
+    number_of_chats = 0
+    served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
+    start_time = datetime.utcnow()
+
+    # Super unban in main client
+    for chat_id in served_chats:
+        if await retry_operation(app.unban_chat_member, chat_id, user_id):
+            number_of_chats += 1
+        await asyncio.sleep(1)  # Delay to prevent hitting API limits
+
+    # Restarting clients
+    logging.info("Restarting all clients for super unban...")
+    bots = list(mongo_collection.find())
+    for bot in bots:
+        string_token = bot['string']
+        ai = Client(
+            f"{string_token}", API_ID, API_HASH,
+            session_string=string_token,
+            plugins={"root": "ComboBot.plugins.userbot"},
+        )
+        await ai.start()
+        chats = []
+        async for dialog in ai.get_dialogs():
+            chats.append(int(dialog.chat.id))
+        for chat_id in chats:
+            if await retry_operation(ai.unban_chat_member, chat_id, user.id):
+                number_of_chats += 1
+            await asyncio.sleep(1)  # Delay to prevent hitting API limits
+        await ai.send_message(SUPPORT_CHAT_ID, f"Super unbanned from {number_of_chats} chats.")
+
+    end_time = datetime.utcnow()
+    time_taken = end_time - start_time
+
+    final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_sᴜᴘᴇʀᴜɴʙᴀɴ
+
+sᴜᴘᴇʀ ᴜɴʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
+
+ᴜꜱᴇʀ : {user.first_name}
+ᴜꜱᴇʀ ɪᴅ : {user.id}
+
+ʀᴇᴀꜱᴏɴ : {reason}
+
+ᴍᴀɴᴀɢᴇᴅ ʙʏ : {message.from_user.first_name}
+ᴀᴘᴘʀᴏᴠᴇᴅ ʙʏ : {approval_author}
+
+sᴜᴘᴇʀᴜɴʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
+
+ᴛɪᴍᴇ ᴛᴀᴋᴇɴ : {get_readable_time(time_taken)}
+
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {end_time.strftime('%Y-%m-%d %H:%M:%S')}
+
+ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
+
+ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
+
+    await app.send_message(SUPPORT_CHANNEL_ID, final_message)
+    await remove_banned_user(user.id)
+
+async def get_served_chats():
+    """Retrieve the list of served chats from the database."""
+    return await mongo_collection.find({}).to_list(length=None)
+
+async def add_banned_user(user_id):
+    """Add a user to the banned users list in the database."""
+    await mongo_collection.update_one({"user_id": user_id}, {"$set": {"banned": True}}, upsert=True)
+
+async def remove_banned_user(user_id):
+    """Remove a user from the banned users list in the database."""
+    await mongo_collection.update_one({"user_id": user_id}, {"$set": {"banned": False}})
+
+async def retry_operation(func, *args, retries=3):
+    """Retry a function call with specified retries."""
+    for attempt in range(retries):
+        try:
+            return await func(*args)
+        except Exception as e:
+            if attempt < retries - 1:
+                await asyncio.sleep(1)  # Delay before retrying
+            else:
+                print(f"Operation failed: {e}")
+                return False
+
+def get_readable_time(delta):
+    """Convert a timedelta to a human-readable format."""
+    total_seconds = int(delta.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours}h {minutes}m {seconds}s"
