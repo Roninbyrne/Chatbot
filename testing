@@ -225,9 +225,10 @@ async def super_ban_action(user_id, message, approval_author, reason):
             for msg in messages:
                 if await retry_operation(ai.send_message, chat_id, msg):
                     number_of_chats += 1
-                await asyncio.sleep(1)  # Delay to prevent hitting API limits
+                await asyncio.sleep(1)
+                end_time = datetime.utcnow()
+                time_taken = end_time - start_time
 
-    # Send completion message
     final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_sᴜᴘᴇʀʙᴀɴ
 
 sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
@@ -243,6 +244,8 @@ sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
 sᴜᴘᴇʀʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
 
 ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
+
+{get_readable_time(time_taken)}
 
 ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
 
