@@ -24,14 +24,12 @@ from config import BANNED_USERS
 from pytz import timezone 
 from datetime import timedelta, datetime
 
-# Define authors, support chat ID and support channel ID
 AUTHORS = [7337748194, 7202110938, 7512713188]
 SUPPORT_CHAT_ID = -1002408883218
 SUPPORT_CHANNEL_ID = -1002059806687
 
-# Define your specific chat IDs here
 SPECIFIC_CHAT_IDS = [
-    -1001234567890,  # Replace with actual chat IDs
+    -1001234567890
     -1009876543210,
     -1002345678901,
     -1003456789012,
