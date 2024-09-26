@@ -37,29 +37,29 @@ SUPPORT_CHANNEL_ID = -1002059806687
 
 # Predefined messages for superban and superunban
 SUPERBAN_MESSAGES = [
-    "Superban message 1",
-    "Superban message 2",
-    "Superban message 3",
-    "Superban message 4",
-    "Superban message 5",
-    "Superban message 6",
-    "Superban message 7",
-    "Superban message 8",
-    "Superban message 9",
-    "Superban message 10",
+    "Hi",
+    "Hello",
+    "Hey",
+    "Bye",
+    "M",
+    "Nss",
+    "Nans",
+    "Jasn",
+    "Snanns",
+    "Su0",
 ]
 
 SUPERUNBAN_MESSAGES = [
-    "Superunban message 1",
-    "Superunban message 2",
-    "Superunban message 3",
-    "Superunban message 4",
-    "Superunban message 5",
-    "Superunban message 6",
-    "Superunban message 7",
-    "Superunban message 8",
-    "Superunban message 9",
-    "Superunban message 10",
+    "Bonjour",
+    "Vallah",
+    "Su",
+    "ge 4",
+    "Supage 5",
+    "Sue 6",
+    "Su7",
+    "Sssage 8",
+    "Supe 9",
+    "Super0",
 ]
 
 async def get_user_id(query):
