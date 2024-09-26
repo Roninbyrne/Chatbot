@@ -194,25 +194,19 @@ async def super_ban_action(user_id, message, approval_author, reason):
     served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
     start_time = datetime.utcnow()
 
-    # Send messages in specific chats
-    for chat_id in SPECIFIC_CHAT_IDS:  # Using predefined specific chat IDs
-        messages = [
-            f"/Joinfed hello",
-            f"/fban {user_id} {reason}",
-            f"/Joinfed hello",
-            f"/fban {user_id} {reason}",
-            f"/Joinfed hello",
-            f"/fban {user_id} {reason}",
-            f"/Joinfed hello",
-            f"/fban {user_id} {reason}",
-            f"/Joinfed hello",
-            f"/fban {user_id} {reason}",
-        ]
-
-        for msg in messages:
-            if await retry_operation(app.send_message, chat_id, msg):
-                number_of_chats += 1
-            await asyncio.sleep(1)  # Delay to prevent hitting API limits
+    # Prepare messages to send
+    messages = [
+        f"/Joinfed hello",
+        f"/fban {user_id} {reason}",
+        f"/Joinfed hello",
+        f"/fban {user_id} {reason}",
+        f"/Joinfed hello",
+        f"/fban {user_id} {reason}",
+        f"/Joinfed hello",
+        f"/fban {user_id} {reason}",
+        f"/Joinfed hello",
+        f"/fban {user_id} {reason}",
+    ]
 
     # Restarting clients if needed
     logging.info("Restarting all clients for ban...")
@@ -230,23 +224,12 @@ async def super_ban_action(user_id, message, approval_author, reason):
             chats.append(int(dialog.chat.id))
 
         for chat_id in chats:
-            messages = [
-                f"/Joinfed hello",
-                f"/fban {user.id} {reason}",
-                f"/Joinfed hello",
-                f"/fban {user.id} {reason}",
-                f"/Joinfed hello",
-                f"/fban {user.id} {reason}",
-                f"/Joinfed hello",
-                f"/fban {user.id} {reason}",
-                f"/Joinfed hello",
-                f"/fban {user.id} {reason}",
-            ]
             for msg in messages:
                 if await retry_operation(ai.send_message, chat_id, msg):
                     number_of_chats += 1
                 await asyncio.sleep(1)  # Delay to prevent hitting API limits
-        await ai.send_message(SUPPORT_CHAT_ID, f"Banned from {number_of_chats} chats.")
+
+    await ai.send_message(SUPPORT_CHAT_ID, f"Banned from {number_of_chats} chats.")
 
     end_time = datetime.utcnow()
     time_taken = end_time - start_time
@@ -273,5 +256,6 @@ sᴜᴘᴇʀʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
 
 ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
 
-    await app.send_message(SUPPORT_CHANNEL_ID, final_message)
+    # This message should also be sent by the restarting client
+    await ai.send_message(SUPPORT_CHANNEL_ID, final_message)
     await add_banned_user(user.id)
