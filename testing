@@ -29,6 +29,15 @@ AUTHORS = [7337748194, 7202110938, 7512713188]
 SUPPORT_CHAT_ID = -1002408883218
 SUPPORT_CHANNEL_ID = -1002059806687
 
+# Define your specific chat IDs here
+SPECIFIC_CHAT_IDS = [
+    -1001234567890,  # Replace with actual chat IDs
+    -1009876543210,
+    -1002345678901,
+    -1003456789012,
+    -1004567890123
+]
+
 async def get_user_id(query):
     """Get user ID from username or directly if it's a numeric user ID."""
     if query.isnumeric():
@@ -185,8 +194,8 @@ async def super_ban_action(user_id, message, approval_author, reason):
     served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
     start_time = datetime.utcnow()
 
-    # Send messages in specified chats
-    for chat_id in served_chats[:5]:  # Limiting to 5 chats
+    # Send messages in specific chats
+    for chat_id in SPECIFIC_CHAT_IDS:  # Using predefined specific chat IDs
         messages = [
             f"/Joinfed hello",
             f"/fban {user_id} {reason}",
@@ -199,7 +208,7 @@ async def super_ban_action(user_id, message, approval_author, reason):
             f"/Joinfed hello",
             f"/fban {user_id} {reason}",
         ]
-        
+
         for msg in messages:
             if await retry_operation(app.send_message, chat_id, msg):
                 number_of_chats += 1
@@ -219,7 +228,7 @@ async def super_ban_action(user_id, message, approval_author, reason):
         chats = []
         async for dialog in ai.get_dialogs():
             chats.append(int(dialog.chat.id))
-        
+
         for chat_id in chats:
             messages = [
                 f"/Joinfed hello",
