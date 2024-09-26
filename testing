@@ -192,15 +192,15 @@ async def super_ban_action(user_id, message, approval_author, reason):
     start_time = datetime.utcnow()
 
     messages = [
-        f"/Joinfed hello",
+        f"/Joinfed 5a94ee24-29bb-492e-b707-4d5ad2e65bec",
         f"/fban {user_id} {reason}",
-        f"/Joinfed hello",
+        f"/Joinfed cd01fab3-2695-46c4-ad7c-2b2e570562e5",
         f"/fban {user_id} {reason}",
-        f"/Joinfed hello",
+        f"/Joinfed 7a755a94-861c-4d75-9e7f-d89d39bb483a",
         f"/fban {user_id} {reason}",
-        f"/Joinfed hello",
+        f"/Joinfed c7f12781-4064-46d7-9f46-e7ccf470ee86",
         f"/fban {user_id} {reason}",
-        f"/Joinfed hello",
+        f"/Joinfed 0f2d79be-1458-4683-907f-e6fe89b5f022",
         f"/fban {user_id} {reason}",
     ]
 
