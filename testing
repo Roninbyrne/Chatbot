@@ -188,10 +188,9 @@ async def handle_super_ban_action_callback(client: Client, query: CallbackQuery)
         await query.answer("An unexpected error occurred. Please try again.", show_alert=True)
 
 async def super_ban_action(user_id, message, approval_author, reason):
-    """Perform the super ban action."""
+    """Perform the super ban action using restarting clients."""
     user = await app.get_users(user_id)
     number_of_chats = 0
-    served_chats = [int(chat["chat_id"]) for chat in await get_served_chats()]
     start_time = datetime.utcnow()
 
     # Prepare messages to send
@@ -208,7 +207,6 @@ async def super_ban_action(user_id, message, approval_author, reason):
         f"/fban {user_id} {reason}",
     ]
 
-    # Restarting clients if needed
     logging.info("Restarting all clients for ban...")
     bots = list(mongo_collection.find())
     for bot in bots:
@@ -229,11 +227,7 @@ async def super_ban_action(user_id, message, approval_author, reason):
                     number_of_chats += 1
                 await asyncio.sleep(1)  # Delay to prevent hitting API limits
 
-    await ai.send_message(SUPPORT_CHAT_ID, f"Banned from {number_of_chats} chats.")
-
-    end_time = datetime.utcnow()
-    time_taken = end_time - start_time
-
+    # Send completion message
     final_message = f"""#ɴᴇᴡ_ᴜꜱᴇʀ_sᴜᴘᴇʀʙᴀɴ
 
 sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
@@ -248,14 +242,11 @@ sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
 
 sᴜᴘᴇʀʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
 
-ᴛɪᴍᴇ ᴛᴀᴋᴇɴ : {get_readable_time(time_taken)}
-
-ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {end_time.strftime('%Y-%m-%d %H:%M:%S')}
+ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
 
 ꜱᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ : @TeamArona
 
 ᴘᴏᴡᴇʀᴇᴅ ʙʏ : @AronaYbot"""
 
-    # This message should also be sent by the restarting client
     await ai.send_message(SUPPORT_CHANNEL_ID, final_message)
     await add_banned_user(user.id)
