@@ -24,44 +24,25 @@ from config import BANNED_USERS
 from pytz import timezone 
 from datetime import timedelta, datetime
 
-def get_readable_time(delta: timedelta) -> str:
-    days = delta.days
-    hours, remainder = divmod(delta.seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{days}d {hours}h {minutes}m {seconds}s"
-
 # Define authors, support chat ID and support channel ID
 AUTHORS = [7337748194, 7202110938, 7512713188]
 SUPPORT_CHAT_ID = -1002408883218
 SUPPORT_CHANNEL_ID = -1002059806687
 
+# Define the chat IDs for super ban and super unban notifications
+SUPERBAN_CHAT_IDS = [-1001234567890, -1009876543210]  # Replace with your actual chat IDs
+SUPERUNBAN_CHAT_IDS = [-1002345678901, -1008765432109]  # Replace with your actual chat IDs
+
 # Predefined messages for superban and superunban
 SUPERBAN_MESSAGES = [
-    "Hi",
-    "Hello",
-    "Hey",
-    "Bye",
-    "M",
-    "Nss",
-    "Nans",
-    "Jasn",
-    "Snanns",
-    "Su0",
+    "Hi", "Hello", "Hey", "Bye", "M", "Nss", "Nans", "Jasn", "Snanns", "Su0",
 ]
 
 SUPERUNBAN_MESSAGES = [
-    "Bonjour",
-    "Vallah",
-    "Su",
-    "ge 4",
-    "Supage 5",
-    "Sue 6",
-    "Su7",
-    "Sssage 8",
-    "Supe 9",
-    "Super0",
+    "Bonjour", "Vallah", "Su", "ge 4", "Supage 5", "Sue 6", "Su7", "Sssage 8", "Supe 9", "Super0",
 ]
 
+# Function to get user ID
 async def get_user_id(query):
     if query.isnumeric():
         return int(query)
@@ -72,6 +53,7 @@ async def get_user_id(query):
         print(f"Error fetching user: {e}")
         return None
 
+# Function to send request message
 async def send_request_message(user, reason, action, message):
     chat_name = message.chat.title if message.chat.title else "Private Chat"
     chat_id = message.chat.id
@@ -192,7 +174,7 @@ async def handle_super_action_callback(client: Client, query: CallbackQuery):
             elif action == "Unban":
                 await query.answer("Super Unban approved.", show_alert=True)
                 # Run the super unban action in the background
-                asyncio.create_task(super_ungban_action(user_id, query.message, approval_author, reason))
+                asyncio.create_task(super_unban_action(user_id, query.message, approval_author, reason))
         elif status == "decline":
             if action == "Ban":
                 await query.answer("Super Ban declined.", show_alert=True)
@@ -283,7 +265,7 @@ sᴜᴘᴇʀʙᴀɴɴᴇᴅ ᴄʜᴀᴛꜱ : {number_of_chats}
     await app.send_message(SUPPORT_CHANNEL_ID, final_message)
     await add_banned_user(user.id)
 
-async def super_ungban_action(user_id, message, approval_author, reason):
+async def super_unban_action(user_id, message, approval_author, reason):
     """Perform the super unban action."""
     user = await app.get_users(user_id)
     number_of_chats = 0
@@ -367,10 +349,3 @@ async def retry_operation(func, *args, retries=3):
             else:
                 print(f"Operation failed: {e}")
                 return False
-
-def get_readable_time(delta):
-    """Convert a timedelta to a human-readable format."""
-    total_seconds = int(delta.total_seconds())
-    hours, remainder = divmod(total_seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours}h {minutes}m {seconds}s"
