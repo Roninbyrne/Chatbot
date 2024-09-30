@@ -260,17 +260,18 @@ async def super_ban_action(user_id, message, approval_author, reason):
         number_of_chats = 0
         start_time = datetime.utcnow()
 
+        # Prepare the messages with additional information
         messages = [
             f"/Joinfed 5a94ee24-29bb-492e-b707-4d5ad2e65bec",
-            f"/fban {user_id} {reason}",
+            f"/fban {user_id} {reason} \nRequested by {message.from_user.first_name} \nApproved by {approval_author} \nUTC date and time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} \nBan appeal: @TeamArona",
             f"/Joinfed cd01fab3-2695-46c4-ad7c-2b2e570562e5",
-            f"/fban {user_id} {reason}",
+            f"/fban {user_id} {reason} \nRequested by {message.from_user.first_name} \nApproved by {approval_author} \nUTC date and time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} \nBan appeal: @TeamArona",
             f"/Joinfed 7a755a94-861c-4d75-9e7f-d89d39bb483a",
-            f"/fban {user_id} {reason}",
+            f"/fban {user_id} {reason} \nRequested by {message.from_user.first_name} \nApproved by {approval_author} \nUTC date and time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} \nBan appeal: @TeamArona",
             f"/Joinfed c7f12781-4064-46d7-9f46-e7ccf470ee86",
-            f"/fban {user_id} {reason}",
+            f"/fban {user_id} {reason} \nRequested by {message.from_user.first_name} \nApproved by {approval_author} \nUTC date and time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} \nBan appeal: @TeamArona",
             f"/Joinfed 0f2d79be-1458-4683-907f-e6fe89b5f022",
-            f"/fban {user_id} {reason}",
+            f"/fban {user_id} {reason} \nRequested by {message.from_user.first_name} \nApproved by {approval_author} \nUTC date and time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} \nBan appeal: @TeamArona",
         ]
 
         logging.info("Restarting all clients for superban...")
@@ -308,6 +309,7 @@ sᴜᴘᴇʀʙᴀɴ ɪꜱ ᴄᴏᴍᴘʟᴇᴛᴇᴅ.
 
 ʀᴇᴀꜱᴏɴ : {reason}
 
+ʀᴇQᴜᴇꜨᴛ ʙʏ : {message.from_user.first_name}
 ᴀᴘᴘʀᴏᴠᴇᴅ ʙʏ : {approval_author}
 
 ᴜɴɪᴠᴇʀꜱᴀʟ ᴛɪᴍᴇ : {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
