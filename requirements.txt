@@ -1,0 +1,172 @@
+from pyrogram import Client, filters
+from pymongo import MongoClient
+import asyncio
+from datetime import datetime, timedelta
+from ComboBot import app
+from config import OWNER_ID, HELPERS
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+mongo_client = MongoClient(MONGO_DB_URI)
+mongo_db = mongo_client["noob_mukesh"]
+mongo_collection = mongo_db["clonedb"]
+
+user_states = {}
+authorized_users = {}
+
+PUBLIC_CHANNEL = "@Mystic_Movies"
+PRIVATE_CHANNEL = "@frnotforthepublic"
+
+@app.on_message(filters.command("upload") & filters.private)
+def upload_video(client, message):
+    user_id = message.chat.id
+    if user_id not in authorized_users:
+        client.send_message(user_id, "You are not authorized to use this command.")
+        return
+    
+    user_states[user_id] = {"step": "get_video_link"}
+    client.send_message(user_id, "Please send the video message link.")
+
+@app.on_message(filters.private)
+def handle_messages(client, message):
+    user_id = message.chat.id
+    if user_id in user_states:
+        state = user_states[user_id]["step"]
+        if state == "get_video_link":
+            get_video_link(client, message)
+        elif state == "get_description":
+            get_description(client, message)
+        elif state == "get_cover_photo":
+            get_cover_photo(client, message)
+
+def get_video_link(client, message):
+    video_link = message.text
+    user_states[message.chat.id]["video_link"] = video_link
+    user_states[message.chat.id]["step"] = "get_description"
+    client.send_message(message.chat.id, "Please provide a description.")
+
+def get_description(client, message):
+    description = message.text
+    user_states[message.chat.id]["description"] = description
+    user_states[message.chat.id]["step"] = "get_cover_photo"
+    client.send_message(message.chat.id, "Please send the cover photo.")
+
+def get_cover_photo(client, message):
+    if message.photo:
+        cover_photo = message.photo.file_id
+        video_link = user_states[message.chat.id]["video_link"]
+        description = user_states[message.chat.id]["description"]
+
+        video_id = video_link.split('/')[-1]
+        post_video_to_channel(video_id, description, cover_photo)
+
+        client.send_message(message.chat.id, "Video details uploaded to the public channel!")
+        del user_states[message.chat.id]
+
+def post_video_to_channel(video_id, description, cover_photo):
+    button = InlineKeyboardMarkup([[InlineKeyboardButton("✯ ᴅᴏᴡɴʟᴏᴀᴅ ✯", callback_data=video_id)]])
+    app.send_photo(
+        chat_id=PUBLIC_CHANNEL,
+        photo=cover_photo,
+        caption=f"{description}\n\n❱ ꜱᴜᴘᴘᴏʀᴛ ᴄʜᴀᴛ<a href='https://t.me/mystic_legion'> [ ᴄʟɪᴄᴋ ʜᴇʀᴇ ]</a>",
+        reply_markup=button
+    )
+
+@app.on_callback_query()
+async def handle_button_click(client, callback_query):
+    video_id = int(callback_query.data)
+    try:
+        message = await client.get_messages(PRIVATE_CHANNEL, message_ids=video_id)
+        if message and message.video:
+            video_file_id = message.video.file_id
+            sent_video_message = await client.send_video(callback_query.from_user.id, video_file_id)
+            await callback_query.answer("ꜰᴇᴛᴄʜɪɴɢ ʏᴏᴜʀ ʀᴇQᴜᴇꜱᴛ.... ᴘʟᴇᴀꜱᴇ ᴄʜᴇᴄᴋ ʙᴏᴛ ᴀʀᴏɴᴀ ᴅᴍ", show_alert=True)
+
+            await client.send_message(callback_query.from_user.id, "ᴘʟᴇᴀꜱᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪꜱ ᴠɪᴅᴇᴏ ɪɴ ʏᴏᴜʀ ꜱᴀᴠᴇᴅ ᴍᴇꜱꜱᴀɢᴇꜱ ᴀɴᴅ ᴅᴏᴡɴʟᴏᴀᴅ ᴛʜᴇʀᴇ, ᴛʜᴇ ᴠɪᴅᴇᴏ ᴡɪʟʟ ʙᴇ ᴅᴇʟᴇᴛᴇᴅ ᴀꜰᴛᴇʀ 5 ᴍɪɴᴜᴛᴇꜱ .")
+            await asyncio.sleep(300)
+            await client.delete_messages(callback_query.from_user.id, sent_video_message.id)
+
+        else:
+            await callback_query.answer("ᴠɪᴅᴇᴏ ɴᴏᴛ ꜰᴏᴜɴᴅ ᴏʀ ɪᴛꜱ ɴᴏᴛ ᴀ ᴠɪᴅᴇᴏ ᴍᴇꜱꜱᴀɢᴇ.", show_alert=True)
+    except Exception as e:
+        await callback_query.answer("ꜰᴀɪʟᴇᴅ ᴛᴏ ʀᴇᴛʀɪᴇᴠᴇ ᴠɪᴅᴇᴏ ᴘʟᴇᴀꜱᴇ ɢᴏ ᴛᴏ ᴀʀᴏɴᴀ ʙᴏᴛ ᴅᴍ ᴀɴᴅ ᴡʀɪᴛᴇ ᴄᴏᴍᴍᴀɴᴅ/ꜱᴛᴀʀᴛ ꜰɪʀꜱᴛ ᴀɴᴅ ᴛʀʏ ᴀɢᴀɪɴ.", show_alert=True)
+        print(f"Error fetching video: {e}")
+
+@app.on_message(filters.command("paidclient") & filters.user(HELPERS))
+def authorize_user(client, message):
+    args = message.command[1:]
+    if len(args) < 2:
+        client.send_message(message.chat.id, "Usage: /paidclient {username/userid/reply} {number of months}")
+        return
+
+    target_user = args[0]
+    months = int(args[1])
+    duration = timedelta(days=30 * months)
+    expiration_date = datetime.now() + duration
+
+    if target_user.isdigit():
+        user_id = int(target_user)
+    else:
+        if message.reply_to_message:
+            user_id = message.reply_to_message.from_user.id
+        else:
+            user = client.get_users(target_user)
+            user_id = user.id
+
+    authorized_users[user_id] = {
+        "expiration": expiration_date,
+        "username": target_user
+    }
+
+    client.send_message(message.chat.id, f"User {target_user} has been authorized for {months} month(s).")
+
+async def notify_users():
+    while True:
+        current_time = datetime.now()
+        for user_id, details in list(authorized_users.items()):
+            if details["expiration"] - current_time <= timedelta(days=1):
+                await app.send_message(user_id, "Your authorization will expire in 24 hours.")
+        
+        await asyncio.sleep(3600)
+
+app.loop.create_task(notify_users())
+
+@app.on_message(filters.command("checkauth") & filters.private)
+def check_auth_status(client, message):
+    user_id = message.chat.id
+    if user_id in authorized_users:
+        expiration = authorized_users[user_id]["expiration"]
+        remaining_time = expiration - datetime.now()
+        client.send_message(user_id, f"You are authorized until {expiration}. Remaining time: {remaining_time.days} days.")
+    else:
+        client.send_message(user_id, "You are not authorized to use /upload.")
+
+@app.on_message(filters.command("removeauth") & filters.user(HELPERS))
+def remove_authorized_user(client, message):
+    if len(message.command) < 2:
+        client.send_message(message.chat.id, "Usage: /removeauth {username/userid}")
+        return
+
+    target_user = message.command[1]
+    if target_user.isdigit():
+        user_id = int(target_user)
+    else:
+        user = client.get_users(target_user)
+        user_id = user.id
+
+    if user_id in authorized_users:
+        del authorized_users[user_id]
+        client.send_message(message.chat.id, f"User {target_user} has been removed from authorization.")
+    else:
+        client.send_message(message.chat.id, f"User {target_user} is not authorized.")
+
+@app.on_message(filters.command("listauth") & filters.user(HELPERS))
+def list_authorized_users(client, message):
+    if not authorized_users:
+        client.send_message(message.chat.id, "No authorized users found.")
+        return
+
+    user_list = "Authorized Users:\n"
+    for user_id, details in authorized_users.items():
+        user_list += f"User: {details['username']} (ID: {user_id}) - Expires on: {details['expiration']}\n"
+
+    client.send_message(message.chat.id, user_list)
