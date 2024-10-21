@@ -13,25 +13,38 @@ mongo_collection = mongo_db["clonedb"]
 user_states = {}
 authorized_users = {}
 
-PUBLIC_CHANNEL = "@Mystic_Movies"
-PRIVATE_CHANNEL = "@frnotforthepublic"
-
 @app.on_message(filters.command("upload") & filters.private)
 def upload_video(client, message):
     user_id = message.chat.id
     if user_id not in authorized_users:
         client.send_message(user_id, "You are not authorized to use this command.")
         return
-    
-    user_states[user_id] = {"step": "get_video_link"}
-    client.send_message(user_id, "Please send the video message link.")
+
+    user_states[user_id] = {"step": "get_private_channel"}
+    client.send_message(user_id, "Please send the private channel username (with @).")
+
+def get_private_channel(client, message):
+    private_channel = message.text
+    user_states[message.chat.id]["private_channel"] = private_channel
+    user_states[message.chat.id]["step"] = "get_public_channel"
+    client.send_message(message.chat.id, "Please send the public channel username (with @).")
+
+def get_public_channel(client, message):
+    public_channel = message.text
+    user_states[message.chat.id]["public_channel"] = public_channel
+    user_states[message.chat.id]["step"] = "get_video_link"
+    client.send_message(message.chat.id, "Please send the video message link.")
 
 @app.on_message(filters.private)
 def handle_messages(client, message):
     user_id = message.chat.id
     if user_id in user_states:
         state = user_states[user_id]["step"]
-        if state == "get_video_link":
+        if state == "get_private_channel":
+            get_private_channel(client, message)
+        elif state == "get_public_channel":
+            get_public_channel(client, message)
+        elif state == "get_video_link":
             get_video_link(client, message)
         elif state == "get_description":
             get_description(client, message)
@@ -55,17 +68,18 @@ def get_cover_photo(client, message):
         cover_photo = message.photo.file_id
         video_link = user_states[message.chat.id]["video_link"]
         description = user_states[message.chat.id]["description"]
+        public_channel = user_states[message.chat.id]["public_channel"]
 
         video_id = video_link.split('/')[-1]
-        post_video_to_channel(video_id, description, cover_photo)
+        post_video_to_channel(video_id, description, cover_photo, public_channel)
 
         client.send_message(message.chat.id, "Video details uploaded to the public channel!")
         del user_states[message.chat.id]
 
-def post_video_to_channel(video_id, description, cover_photo):
+def post_video_to_channel(video_id, description, cover_photo, public_channel):
     button = InlineKeyboardMarkup([[InlineKeyboardButton("✯ ᴅᴏᴡɴʟᴏᴀᴅ ✯", callback_data=video_id)]])
     app.send_photo(
-        chat_id=PUBLIC_CHANNEL,
+        chat_id=public_channel,
         photo=cover_photo,
         caption=f"{description}\n\n❱ ꜱᴜᴘᴘᴏʀᴛ ᴄʜᴀᴛ<a href='https://t.me/mystic_legion'> [ ᴄʟɪᴄᴋ ʜᴇʀᴇ ]</a>",
         reply_markup=button
@@ -75,7 +89,7 @@ def post_video_to_channel(video_id, description, cover_photo):
 async def handle_button_click(client, callback_query):
     video_id = int(callback_query.data)
     try:
-        message = await client.get_messages(PRIVATE_CHANNEL, message_ids=video_id)
+        message = await client.get_messages(user_states[callback_query.from_user.id]["private_channel"], message_ids=video_id)
         if message and message.video:
             video_file_id = message.video.file_id
             sent_video_message = await client.send_video(callback_query.from_user.id, video_file_id)
@@ -125,7 +139,7 @@ async def notify_users():
         for user_id, details in list(authorized_users.items()):
             if details["expiration"] - current_time <= timedelta(days=1):
                 await app.send_message(user_id, "Your authorization will expire in 24 hours.")
-        
+
         await asyncio.sleep(3600)
 
 app.loop.create_task(notify_users())
