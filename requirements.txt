@@ -3,11 +3,11 @@ from pymongo import MongoClient
 import asyncio
 from datetime import datetime, timedelta
 from ComboBot import app
-from config import OWNER_ID, HELPERS
+from config import API_ID, API_HASH, MONGO_DB_URI, HELPERS
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 mongo_client = MongoClient(MONGO_DB_URI)
-mongo_db = mongo_client["ronin_byrne"]
+mongo_db = mongo_client["noob_mukesh"]
 mongo_collection = mongo_db["clonedb"]
 
 user_states = {}
