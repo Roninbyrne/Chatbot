@@ -7,7 +7,7 @@ from config import OWNER_ID, HELPERS
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 mongo_client = MongoClient(MONGO_DB_URI)
-mongo_db = mongo_client["noob_mukesh"]
+mongo_db = mongo_client["ronin_byrne"]
 mongo_collection = mongo_db["clonedb"]
 
 user_states = {}
